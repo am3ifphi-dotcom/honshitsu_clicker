@@ -1427,6 +1427,7 @@ export const useGame = create<GameStore>()((set, get) => ({
       const json = fromB64(str.trim());
       const data = JSON.parse(json);
       if (!data || typeof data !== 'object' || typeof data.honshitsu !== 'number') return false;
+      saveBlocked = false;
       set({ ...sanitize(data), lastTick: Date.now() });
       get().save();
       return true;

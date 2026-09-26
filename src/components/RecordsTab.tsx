@@ -77,18 +77,31 @@ export default function RecordsTab() {
           </Btn>
         </div>
         {code && <textarea readOnly value={code} onFocus={(e) => e.currentTarget.select()} className="mt-2 h-20 w-full rounded-lg bg-black/40 p-2 font-mono text-[10px] text-slate-300" />}
-        <div className="mt-3 flex gap-2">
-          <input value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="エクスポートしたコードを貼り付け" className="min-w-0 flex-1 rounded-lg bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:ring-2 focus:ring-purple-400" />
+        <div className="mt-3 space-y-2">
+          <label htmlFor="save-import" className="block text-xs text-slate-300">セーブコードをインポート</label>
+          <textarea
+            id="save-import"
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+            placeholder="エクスポートしたコードをここに貼り付け"
+            spellCheck={false}
+            className="h-20 w-full rounded-lg bg-black/40 p-2 font-mono text-[10px] text-white outline-none focus:ring-2 focus:ring-purple-400"
+          />
           <Btn
             small
             variant="ghost"
             onClick={() => {
+              if (!importText.trim()) {
+                useGame.getState().toast('セーブコードを貼り付けてください', 'bad');
+                return;
+              }
+              if (!confirm('現在のセーブデータをインポートしたデータで置き換えますか？')) return;
               const ok = useGame.getState().importSave(importText);
-              useGame.getState().toast(ok ? 'インポートした' : 'コードが正しくない（✝本質✝が足りない）', ok ? 'good' : 'bad');
+              useGame.getState().toast(ok ? 'インポートした' : 'セーブコードを読み込めませんでした', ok ? 'good' : 'bad');
               if (ok) setImportText('');
             }}
           >
-            インポート
+            インポートする
           </Btn>
         </div>
         {(() => {
