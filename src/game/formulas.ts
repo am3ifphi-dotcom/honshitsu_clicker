@@ -1,16 +1,21 @@
 import type { GameData, Mods, ModPatch, OwnedUnit, Rarity, UnitDef, UnitType } from './types';
-import { SKILL_NODES, PRESTIGE, NODE_MAP } from './data/skills';
+import { SKILL_NODES, PRESTIGE, NODE_MAP, ULTRA_PRESTIGE } from './data/skills';
 import { UNIT_MAP } from './data/units';
 import { ITEM_MAP } from './data/items';
 import { FACILITIES } from './data/facilities';
+import { getUnitAwakenings } from './data/awakening';
 
 export const TYPES: UnitType[] = ['本質', '冷笑', '面白', '地理', '恋愛'];
 export const RARITIES: Rarity[] = ['N', 'R', 'SR', 'SSR', 'UR', 'LR'];
 export const rarityRank = (r: Rarity) => RARITIES.indexOf(r);
 
 export const RARITY_COST: Record<Rarity, number> = { N: 8, R: 20, SR: 50, SSR: 120, UR: 300, LR: 800 };
-export const RARITY_PROD_PCT: Record<Rarity, number> = { N: 0.001, R: 0.002, SR: 0.004, SSR: 0.008, UR: 0.015, LR: 0.03 };
-export const RARITY_REFUND: Record<Rarity, number> = { N: 1, R: 2, SR: 5, SSR: 12, UR: 30, LR: 60 };
+export const RARITY_PROD_PCT: Record<Rarity, number> = { N: 0.01, R: 0.03, SR: 0.08, SSR: 0.20, UR: 0.50, LR: 1.00 };
+export const RARITY_REFUND: Record<Rarity, number> = { N: 2, R: 5, SR: 15, SSR: 40, UR: 100, LR: 250 };
+export const RARITY_CRYSTALS: Record<Rarity, number> = { N: 1, R: 3, SR: 8, SSR: 25, UR: 80, LR: 200 };
+
+export const BASE_MAX_STAR = 15;
+export const getMaxStar = (m: Mods) => BASE_MAX_STAR + (m.maxStarBonus || 0);
 
 export const devToPower = (dev: number) => 50 * (Math.pow(10, (dev - 40) / 15) - 1);
 export const powerToDev = (p: number) => 40 + 15 * Math.log10(1 + Math.max(0, p) / 50);
@@ -24,11 +29,12 @@ export function baseMods(): Mods {
     goldenRate: 0, goldenCan: 0, offlineHours: 0, xpPct: 0, levelCap: 0, autoClick: 0,
     tenGuarantee: 0, pityReduce: 0, canPct: 0, memoryPct: 0,
     typeAtk: { 本質: 0, 冷笑: 0, 面白: 0, 地理: 0, 恋愛: 0 },
+    ultraProdX: 1, ultraStatX: 1, autoGachaSpeed: 0, maxStarBonus: 0, corePct: 0, crystalBonus: 0, bondExpPct: 0,
   };
 }
 
 type NumKey = Exclude<keyof Mods, 'typeAtk'>;
-const MULT_KEYS: NumKey[] = ['clickX', 'prodX', 'dmgX', 'statX'];
+const MULT_KEYS: NumKey[] = ['clickX', 'prodX', 'dmgX', 'statX', 'ultraProdX', 'ultraStatX'];
 
 export function addMods(m: Mods, p: ModPatch) {
   for (const k of Object.keys(p) as (keyof ModPatch)[]) {
@@ -56,6 +62,13 @@ export function computeMods(s: GameData): Mods {
     const lv = s.prestige[p.id] || 0;
     if (lv > 0) addMods(m, p.mods(lv));
   }
+  // ウルトラ転生ツリー
+  if (s.ultraPrestige) {
+    for (const up of ULTRA_PRESTIGE) {
+      const lv = s.ultraPrestige[up.id] || 0;
+      if (lv > 0) addMods(m, up.mods(lv));
+    }
+  }
   for (const id of Object.keys(s.units)) {
     const def = UNIT_MAP[id];
     if (!def) continue;
@@ -73,26 +86,58 @@ export interface UnitStats {
   power: number;
   prod: number;
   cap: number;
+  starMul: number;
+  awakenStatMul: number;
+  awakenProdMul: number;
 }
 
 export const levelCap = (u: OwnedUnit, m: Mods) => 50 + 10 * u.star + m.levelCap;
 
-export function unitStats(def: UnitDef, u: OwnedUnit, m: Mods): UnitStats {
+export function unitStats(def: UnitDef, u: OwnedUnit, m: Mods, s?: GameData): UnitStats {
   const eq = u.equip ? ITEM_MAP[u.equip]?.equip : undefined;
   const lvMul = Math.pow(1.055, u.level - 1);
-  const starMul = 1 + 0.3 * u.star;
+  // 凸倍率：★1〜★15以上
+  const starMul = 1 + 0.35 * u.star + (u.star >= 5 ? 0.5 : 0) + (u.star >= 10 ? 1.0 : 0) + (u.star >= 15 ? 2.0 : 0);
+  
+  // 覚醒倍率
+  let awakenStatMul = 1;
+  let awakenProdMul = 1;
+  if (s?.awakening) {
+    const stage = s.awakening[def.id] || 0;
+    const stages = getUnitAwakenings(def.id);
+    for (let i = 0; i < stage; i++) {
+      if (stages[i]) {
+        awakenStatMul += stages[i].statMult;
+        awakenProdMul += stages[i].prodMult;
+      }
+    }
+  }
+
+  // 絆倍率
+  let bondStatMul = 1;
+  let bondProdMul = 1;
+  if (s?.bonds?.[def.id]) {
+    const bondLv = s.bonds[def.id].lv || 1;
+    bondStatMul += (bondLv - 1) * 0.1;
+    bondProdMul += (bondLv - 1) * 0.15;
+  }
+
   const typeB = m.typeAtk[def.type] + (eq?.typeBonus && eq.typeBonus.type === def.type ? eq.typeBonus.atkPct : 0);
-  const atk = def.atk * lvMul * starMul * Math.max(0.1, 1 + m.atkPct + (eq?.atkPct ?? 0) + typeB) * m.statX;
-  const hp = def.hp * lvMul * starMul * Math.max(0.1, 1 + m.hpPct + (eq?.hpPct ?? 0)) * m.statX;
+  const totalStatX = m.statX * (m.ultraStatX || 1) * awakenStatMul * bondStatMul;
+  const atk = def.atk * lvMul * starMul * Math.max(0.1, 1 + m.atkPct + (eq?.atkPct ?? 0) + typeB) * totalStatX;
+  const hp = def.hp * lvMul * starMul * Math.max(0.1, 1 + m.hpPct + (eq?.hpPct ?? 0)) * totalStatX;
   const spd = def.spd * (1 + m.spdPct + (eq?.spdPct ?? 0));
   const crit = 0.05 + (eq?.crit ?? 0);
   const gaugePct = m.gaugePct + (eq?.gaugePct ?? 0);
-  const power = 2 * atk * spd * m.dmgX * (1 + crit) + (0.25 * hp) / (1 - Math.min(0.75, m.dmgReduce));
-  const prod = def.prod * (1 + 0.1 * (u.level - 1)) * starMul * (1 + (eq?.prodPct ?? 0));
-  return { atk, hp, spd, crit, gaugePct, power, prod, cap: levelCap(u, m) };
+  const power = 2 * atk * spd * m.dmgX * (1 + crit) + (0.25 * hp) / (1 - Math.min(0.85, m.dmgReduce));
+  
+  // 部員の本質生産：レベル、凸、覚醒、絆、装備が乗算
+  const prod = def.prod * Math.pow(1.08, u.level - 1) * starMul * awakenProdMul * bondProdMul * (1 + (eq?.prodPct ?? 0));
+  
+  return { atk, hp, spd, crit, gaugePct, power, prod, cap: levelCap(u, m), starMul, awakenStatMul, awakenProdMul };
 }
 
-export const MILESTONES = [10, 25, 50, 100, 150, 200, 300, 400, 500];
+export const MILESTONES = [10, 25, 50, 100, 150, 200, 300, 400, 500, 750, 1000, 1500, 2000, 3000, 5000];
 export function milestoneMult(n: number) {
   let c = 0;
   for (const t of MILESTONES) if (n >= t) c++;
@@ -138,10 +183,10 @@ export function derive(s: GameData): Derived {
     const def = UNIT_MAP[id];
     if (!def) continue;
     const u = s.units[id];
-    unitFlat += unitStats(def, u, m).prod;
-    unitGlobal += RARITY_PROD_PCT[def.rarity] * u.level * (1 + 0.3 * u.star);
+    unitFlat += unitStats(def, u, m, s).prod;
+    unitGlobal += RARITY_PROD_PCT[def.rarity] * u.level * (1 + 0.35 * u.star);
   }
-  const G = (1 + m.prodPct + unitGlobal) * m.prodX;
+  const G = (1 + m.prodPct + unitGlobal) * m.prodX * (m.ultraProdX || 1);
   const perSecBase = (facRaw + unitFlat * (1 + m.unitProdPct)) * G;
   const perSec = perSecBase * prodBuff;
   const clickBase = (1 + m.clickPct) * m.clickX + perSecBase * m.clickFromPS;
@@ -152,7 +197,7 @@ export function derive(s: GameData): Derived {
     const def = UNIT_MAP[id];
     const u = s.units[id];
     if (!def || !u) continue;
-    power += unitStats(def, u, m).power;
+    power += unitStats(def, u, m, s).power;
   }
   const battleDev = powerToDev(power);
   const prodDev = 40 + 7 * Math.log10(1 + perSecBase);
@@ -161,7 +206,7 @@ export function derive(s: GameData): Derived {
   return { m, perSec, perSecBase, clickPower, clickBase, power, battleDev, prodDev, clickDev, totalDev, prodBuff, clickBuff, globalMult: G * prodBuff };
 }
 
-export const xpToNext = (lv: number) => Math.floor(25 * Math.pow(1.22, lv - 1));
+export const xpToNext = (lv: number) => Math.floor(25 * Math.pow(1.18, lv - 1));
 
 export function spTotal(s: GameData) {
   return s.level - 1 + s.bonusSP;
@@ -183,6 +228,11 @@ export function gradeName(lv: number) {
 }
 
 const TIERS: [number, string][] = [
+  [1000, '✝真・前-原✝本質✝（宇宙開闢）'],
+  [750, '構造線の支配者'],
+  [500, '時空超越の理数科'],
+  [350, '全知全能のコーンスープ'],
+  [250, 'グレートチェーン絶対特異点'],
   [200, '前-原✝本質✝'],
   [150, '✝本質✝（測定不能）'],
   [120, '地形図の向こう側'],
@@ -223,7 +273,13 @@ export function rebirthGain(s: GameData, m: Mods) {
   return Math.floor(Math.pow((s.maxDev - 55) / 5, 2) * (1 + m.memoryPct));
 }
 
-export const unitLevelCost = (def: UnitDef, lv: number) => RARITY_COST[def.rarity] * Math.pow(1.16, lv - 1);
+// 🌌 ウルトラ転生（超越）で獲得する構造線の核（総合偏差値120で解放）
+export function ultraRebirthGain(s: GameData, m: Mods) {
+  if (s.maxDev < 120) return 0;
+  return Math.floor(Math.pow((s.maxDev - 115) / 4, 2.2) * (1 + (m.corePct || 0)));
+}
+
+export const unitLevelCost = (def: UnitDef, lv: number) => RARITY_COST[def.rarity] * Math.pow(1.15, lv - 1);
 
 export const FAC_GROWTH = 1.15;
 export function bulkCost(base: number, owned: number, n: number) {
@@ -236,17 +292,17 @@ export function maxAffordable(base: number, owned: number, money: number) {
 }
 
 export function gachaRates(m: Mods): Record<Rarity, number> {
-  const LR = 0.002 + m.ssrBonus * 0.05;
-  const UR = 0.012 + m.ssrBonus * 0.25;
-  const SSR = 0.05 + m.ssrBonus;
-  const SR = 0.19;
-  const R = 0.32;
+  const LR = 0.003 + m.ssrBonus * 0.05;
+  const UR = 0.015 + m.ssrBonus * 0.25;
+  const SSR = 0.06 + m.ssrBonus;
+  const SR = 0.22;
+  const R = 0.35;
   const N = Math.max(0, 1 - LR - UR - SSR - SR - R);
   return { N, R, SR, SSR, UR, LR };
 }
 
 export function pityMax(m: Mods) {
-  return Math.max(30, 80 - m.pityReduce);
+  return Math.max(25, 75 - m.pityReduce);
 }
 
 export function rollWeighted<T extends string>(weights: Record<T, number>): T {

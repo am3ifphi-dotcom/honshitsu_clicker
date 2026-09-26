@@ -161,4 +161,99 @@ export const sfx = {
       /* noop */
     }
   },
+  crit() {
+    const c = getCtx();
+    if (!c) return;
+    try {
+      const t = c.currentTime + 0.01;
+      const o = c.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(440, t);
+      o.frequency.exponentialRampToValueAtTime(1320, t + 0.15);
+      const g = amp(c, t, 0.2, 0.005, 0.2);
+      o.connect(g).connect(c.destination);
+      o.start(t);
+      o.stop(t + 0.22);
+    } catch {
+      /* noop */
+    }
+  },
+  gacon() {
+    const c = getCtx();
+    if (!c) return;
+    try {
+      const t = c.currentTime + 0.01;
+      // レバー引く音＆金属音
+      const o1 = c.createOscillator();
+      o1.type = 'triangle';
+      o1.frequency.setValueAtTime(180, t);
+      o1.frequency.exponentialRampToValueAtTime(60, t + 0.18);
+      const g1 = amp(c, t, 0.35, 0.01, 0.2);
+      o1.connect(g1).connect(c.destination);
+      o1.start(t);
+      o1.stop(t + 0.25);
+
+      // 缶が落ちてゴトッと当たる音
+      const t2 = t + 0.12;
+      const n = c.createBufferSource();
+      n.buffer = noiseBuffer(c, 0.2);
+      const f = c.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.setValueAtTime(450, t2);
+      f.Q.value = 4;
+      const ng = amp(c, t2, 0.4, 0.008, 0.25);
+      n.connect(f).connect(ng).connect(c.destination);
+      n.start(t2);
+      n.stop(t2 + 0.3);
+    } catch {
+      /* noop */
+    }
+  },
+  hundred() {
+    const c = getCtx();
+    if (!c) return;
+    try {
+      const t = c.currentTime + 0.01;
+      for (let i = 0; i < 5; i++) {
+        const ti = t + i * 0.05;
+        const o = c.createOscillator();
+        o.type = 'triangle';
+        o.frequency.value = 500 + i * 150;
+        const g = amp(c, ti, 0.15, 0.005, 0.1);
+        o.connect(g).connect(c.destination);
+        o.start(ti);
+        o.stop(ti + 0.12);
+      }
+      boom(c, t + 0.3, 0.45);
+    } catch {
+      /* noop */
+    }
+  },
+  awaken() {
+    const c = getCtx();
+    if (!c) return;
+    try {
+      const t = c.currentTime + 0.01;
+      riser(c, t, 0.3);
+      shimmer(c, t + 0.4, 0.35);
+      boom(c, t + 0.5, 0.4);
+    } catch {
+      /* noop */
+    }
+  },
+  ultra() {
+    const c = getCtx();
+    if (!c) return;
+    try {
+      const t = c.currentTime + 0.02;
+      deep(c, t, 0.6);
+      boom(c, t + 0.4, 0.7);
+      glitchBlips(c, t + 0.7, 0.4);
+      riser(c, t + 1.2, 0.4);
+      boom(c, t + 1.8, 0.8);
+      shimmer(c, t + 2.2, 0.4);
+    } catch {
+      /* noop */
+    }
+  },
 };

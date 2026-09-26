@@ -97,7 +97,7 @@ export function createBattle(s: GameData, rec: number, enemies: EnemyDef[]): BSt
     const def = UNIT_MAP[id];
     const u = s.units[id];
     if (!def || !u) return;
-    const st = unitStats(def, u, m);
+    const st = unitStats(def, u, m, s);
     allies.push({
       uid: 'a' + i,
       side: 'ally',

@@ -48,6 +48,14 @@ export interface Mods {
   canPct: number;
   memoryPct: number;
   typeAtk: Record<UnitType, number>;
+  // ウルトラ転生・拡張モディファイア
+  ultraProdX: number;
+  ultraStatX: number;
+  autoGachaSpeed: number;
+  maxStarBonus: number;
+  corePct: number;
+  crystalBonus: number;
+  bondExpPct: number;
 }
 
 export type ModPatch = Partial<Omit<Mods, 'typeAtk'>> & { typeAtk?: Partial<Record<UnitType, number>> };
@@ -199,6 +207,43 @@ export interface PrestigeDef {
   mods: (lv: number) => ModPatch;
 }
 
+export interface UltraPrestigeDef {
+  id: string;
+  name: string;
+  emoji: string;
+  desc: string;
+  max: number;
+  baseCost: number;
+  costMult: number;
+  mods: (lv: number) => ModPatch;
+}
+
+export interface AwakeningStage {
+  title: string;
+  desc: string;
+  reqLevel: number;
+  reqStar: number;
+  costCans: number;
+  costCrystals: number;
+  costHonshitsu: number;
+  statMult: number;
+  prodMult: number;
+  flavor: string;
+}
+
+export type GachaPoolId = 'standard' | 'artifact' | 'abyss';
+
+export interface GachaPoolDef {
+  id: GachaPoolId;
+  name: string;
+  subtitle: string;
+  desc: string;
+  emoji: string;
+  currency: 'can' | 'crystal' | 'core';
+  featuredIds: string[];
+  bannerGradient: string;
+}
+
 export interface OwnedUnit {
   level: number;
   star: number;
@@ -240,6 +285,22 @@ export interface GameData {
   memories: number;
   totalMemories: number;
   rebirths: number;
+  // ウルトラ転生
+  ultraRebirths: number;
+  cores: number;
+  totalCores: number;
+  ultraPrestige: Record<string, number>;
+  // 本質結晶（凸余剰還元＆交換所）
+  crystals: number;
+  totalCrystals: number;
+  // 部員新育成要素（本質覚醒 & 放課後絆）
+  awakening: Record<string, number>;
+  bonds: Record<string, { exp: number; lv: number }>;
+  // ログボ＆アプデ記念プレゼント
+  claimedUpdateGift: boolean;
+  lastLoginDate: string;
+  loginStreak: number;
+  loginClaimedDays: number[];
   clicks: number;
   allClicks: number;
   facilities: Record<string, number>;
@@ -294,4 +355,7 @@ export interface PullResult {
   isNew: boolean;
   star: number;
   refund: number;
+  crystals: number;
+  kind?: 'unit' | 'equip';
+  equipId?: string;
 }

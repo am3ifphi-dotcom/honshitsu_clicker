@@ -17,6 +17,8 @@ import ItemsTab from './components/ItemsTab';
 import RebirthTab from './components/RebirthTab';
 import RecordsTab from './components/RecordsTab';
 import TitleScreen from './components/TitleScreen';
+import LoginBonusModal from './components/LoginBonusModal';
+import UpdateGiftModal from './components/UpdateGiftModal';
 import { Btn, Modal } from './components/ui';
 
 type Tab = 'class' | 'gacha' | 'units' | 'skill' | 'story' | 'league' | 'items' | 'rebirth' | 'records';
@@ -29,7 +31,7 @@ const TABS: { id: Tab; label: string; emoji: string }[] = [
   { id: 'units', label: '部員', emoji: '👥' },
   { id: 'skill', label: 'スキル', emoji: '🌳' },
   { id: 'items', label: '持ち物', emoji: '🎒' },
-  { id: 'rebirth', label: '卒業', emoji: '🎓' },
+  { id: 'rebirth', label: '卒業・超越', emoji: '🎓' },
   { id: 'records', label: '年鑑', emoji: '📜' },
 ];
 
@@ -48,9 +50,13 @@ export default function App() {
   const [showTitle, setShowTitle] = useState(true);
   const [hasSave] = useState(hasSaveData);
   const [seenId, setSeenId] = useState(0);
+  const [showAutoGift, setShowAutoGift] = useState(false);
+  const [showAutoLogin, setShowAutoLogin] = useState(false);
 
   const cans = useGame((s) => s.cans);
   const tickets = useGame((s) => s.items['ticket'] || 0);
+  const claimedGift = useGame((s) => s.claimedUpdateGift);
+  const lastLogin = useGame((s) => s.lastLoginDate);
   const spAvail = useGame((s) => spTotal(s) - spSpent(s));
   const canRebirth = useGame((s) => s.maxDev >= 60);
   const lastChatId = useGame((s) => (s.chat.length ? s.chat[s.chat.length - 1].id : 0));
@@ -63,6 +69,18 @@ export default function App() {
   useEffect(() => {
     const gained = useGame.getState().init();
     if (gained > 1) setOffline(gained);
+
+    // アプデ記念プレゼント未受取なら自動で案内
+    const st = useGame.getState();
+    if (!st.claimedUpdateGift) {
+      setTimeout(() => setShowAutoGift(true), 800);
+    } else {
+      const today = new Date().toISOString().split('T')[0];
+      if (st.lastLoginDate !== today) {
+        setTimeout(() => setShowAutoLogin(true), 800);
+      }
+    }
+
     const t = window.setInterval(() => useGame.getState().tick(), 200);
     const a = window.setInterval(() => useGame.getState().checkAchievements(), 1000);
     const sv = window.setInterval(() => useGame.getState().save(), 10000);
@@ -201,6 +219,23 @@ export default function App() {
           <Btn onClick={() => setOffline(0)}>受け取る</Btn>
         </div>
       </Modal>
+
+      {showAutoGift && !showTitle && (
+        <UpdateGiftModal
+          open
+          onClose={() => {
+            setShowAutoGift(false);
+            const today = new Date().toISOString().split('T')[0];
+            if (useGame.getState().lastLoginDate !== today) {
+              setShowAutoLogin(true);
+            }
+          }}
+        />
+      )}
+
+      {showAutoLogin && !showTitle && !showAutoGift && (
+        <LoginBonusModal open onClose={() => setShowAutoLogin(false)} />
+      )}
 
       {showTitle && (
         <TitleScreen
