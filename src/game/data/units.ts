@@ -5,6 +5,15 @@ import reiImg from '../../assets/img/rei.jpg';
 import terachiImg from '../../assets/img/terachi.jpg';
 import satoImg from '../../assets/img/sato.jpg';
 import heikatsuImg from '../../assets/img/heikatsu.jpg';
+import izakiImg from '../../assets/img/izaki.jpg';
+import izumiImg from '../../assets/img/izumi.jpg';
+import meshinoImg from '../../assets/img/meshino.jpg';
+import sakuraImg from '../../assets/img/sakura.jpg';
+import mitsumineImg from '../../assets/img/mitsumine.jpg';
+import naitoImg from '../../assets/img/naito.jpg';
+import futamiImg from '../../assets/img/futami.jpg';
+import kuraishiImg from '../../assets/img/kuraishi.jpg';
+import feikatsuImg from '../../assets/img/feikatsu.jpg';
 
 export const PORTRAITS: Record<string, string> = {
   ryoma: ryomaImg,
@@ -13,6 +22,15 @@ export const PORTRAITS: Record<string, string> = {
   terachi: terachiImg,
   sato: satoImg,
   heikatsu: heikatsuImg,
+  izaki: izakiImg,
+  izumi: izumiImg,
+  meshino: meshinoImg,
+  sakura: sakuraImg,
+  mitsumine: mitsumineImg,
+  naito: naitoImg,
+  futami: futamiImg,
+  kuraishi: kuraishiImg,
+  feikatsu: feikatsuImg,
 };
 
 export const UNITS: UnitDef[] = [
@@ -153,56 +171,56 @@ export const UNITS: UnitDef[] = [
   },
   // ───────── SR ─────────
   {
-    id: 'izaki', name: '伊崎', title: 'まとめ役', rarity: 'SR', type: '面白', emoji: '😄', speaker: 'izaki',
+    id: 'izaki', name: '伊崎', title: 'まとめ役', rarity: 'SR', type: '面白', emoji: '😄', speaker: 'izaki', portrait: PORTRAITS.izaki,
     atk: 22, hp: 180, spd: 1.0, prod: 0.8,
     skill: { name: 'まとめ役', kind: 'buff', power: 0.4, duration: 8, charge: 110, line: '面白いな！ 俺も混ぜて', desc: '味方全体のATK+40%（8秒）' },
     passive: { desc: '【編成時】部員ATK+5%', scope: 'party', mods: { atkPct: 0.05 } },
     quote: '朝飯が何億年前の地面で決まってるって、やばくないか。', desc: 'B組のまとめ役。三重の「まあ」の隙間を正確に突く（無自覚）。',
   },
   {
-    id: 'izumi', name: '伊豆見', title: '大喜利の司会', rarity: 'SR', type: '面白', emoji: '🎤', speaker: 'izumi',
+    id: 'izumi', name: '伊豆見', title: '大喜利の司会', rarity: 'SR', type: '面白', emoji: '🎤', speaker: 'izumi', portrait: PORTRAITS.izumi,
     atk: 20, hp: 190, spd: 1.1, prod: 0.8,
     skill: { name: '大喜利', kind: 'gamble', power: 4.0, charge: 100, line: 'お題：✝本質✝を一言で説明してください', desc: '50%で敵全体ATK×400%／滑ると何も起きない' },
     passive: { desc: '学年XP+10%', scope: 'owned', mods: { xpPct: 0.1 } },
     quote: '俺が司会やりたい。', desc: '伊崎の横から、半歩だけ自分の方へ歩き出した。',
   },
   {
-    id: 'meshino', name: '召野カイト', title: '人妻の使徒', rarity: 'SR', type: '恋愛', emoji: '💍', speaker: 'meshino',
+    id: 'meshino', name: '召野カイト', title: '人妻の使徒', rarity: 'SR', type: '恋愛', emoji: '💍', speaker: 'meshino', portrait: PORTRAITS.meshino,
     atk: 30, hp: 140, spd: 1.0, prod: 0.8,
     skill: { name: '封印の刻印', kind: 'nuke', power: 4.5, charge: 120, line: '指輪が光るたびに心臓が止まる！', desc: '単体にATK×450%' },
     passive: { desc: '【編成時】恋愛タイプATK+15%', scope: 'party', mods: { typeAtk: { 恋愛: 0.15 } } },
     quote: '人妻は美しい。封印されているからこそ輝く。', desc: '英語の成績が百二十五人抜き。動機は不純だった。今は違う。',
   },
   {
-    id: 'sakura', name: '櫻優', title: '恋愛学の研究者', rarity: 'SR', type: '恋愛', emoji: '📓', speaker: 'sakura',
+    id: 'sakura', name: '櫻優', title: '恋愛学の研究者', rarity: 'SR', type: '恋愛', emoji: '📓', speaker: 'sakura', portrait: PORTRAITS.sakura,
     atk: 24, hp: 160, spd: 1.0, prod: 0.8,
     skill: { name: 'シュレディンガーの好意', kind: 'gamble', power: 5.0, charge: 110, line: '告白は波動関数の崩壊である！', desc: '50%で敵全体ATK×500%／50%で理論崩壊' },
     passive: { desc: 'ドロップ率+10%', scope: 'owned', mods: { dropPct: 0.1 } },
     quote: '彼女はいません。いたこともありません。', desc: '内進二年。サンプルG-07を二ヶ月観察していた。',
   },
   {
-    id: 'mitsumine', name: '三峰瑠衣', title: '内進の「は？」', rarity: 'SR', type: '冷笑', emoji: '😤', speaker: 'mitsumine',
+    id: 'mitsumine', name: '三峰瑠衣', title: '内進の「は？」', rarity: 'SR', type: '冷笑', emoji: '😤', speaker: 'mitsumine', portrait: PORTRAITS.mitsumine,
     atk: 20, hp: 220, spd: 1.0, prod: 0.8,
     skill: { name: 'は？（内進）', kind: 'stun', power: 1.0, duration: 2.5, charge: 110, line: 'は？', desc: '敵全体ATK×100%＋2.5秒スタン' },
     passive: { desc: '【編成時】部員HP+8%', scope: 'party', mods: { hpPct: 0.08 } },
     quote: '好きなら好きって言いなよ。', desc: '常識の塊。三重と「は？」がハモる（本人たちは否定）。',
   },
   {
-    id: 'naito', name: '内藤蘭', title: '少し笑う人', rarity: 'SR', type: '面白', emoji: '📖', speaker: 'naito',
+    id: 'naito', name: '内藤蘭', title: '少し笑う人', rarity: 'SR', type: '面白', emoji: '📖', speaker: 'naito', portrait: PORTRAITS.naito,
     atk: 18, hp: 210, spd: 1.0, prod: 0.8,
     skill: { name: '面白い考え方だね', kind: 'heal', power: 0.4, charge: 110, line: '（少し笑った）', desc: '味方全体HP40%回復' },
     passive: { desc: '【編成時】スキルゲージ増加+5%', scope: 'party', mods: { gaugePct: 0.05 } },
     quote: '意味わかんないけど、聞いてると安心する。', desc: '本質配信の視聴者。櫻の理論に核爆弾を落とした。',
   },
   {
-    id: 'futami', name: '二見玲子', title: '副担任（英語）', rarity: 'SR', type: '恋愛', emoji: '🔤', speaker: 'futami',
+    id: 'futami', name: '二見玲子', title: '副担任（英語）', rarity: 'SR', type: '恋愛', emoji: '🔤', speaker: 'futami', portrait: PORTRAITS.futami,
     atk: 22, hp: 180, spd: 1.0, prod: 0.8,
     skill: { name: 'すごい、召野くん', kind: 'buff', power: 0.5, duration: 8, charge: 120, line: 'Great job!', desc: '味方全体のATK+50%（8秒）' },
     passive: { desc: '【編成時】恋愛タイプATK+10%', scope: 'party', mods: { typeAtk: { 恋愛: 0.1 } } },
     quote: '私のためじゃなくて、自分のためにね。', desc: '明るい先生。左手薬指に封印の刻印。',
   },
   {
-    id: 'kuraishi', name: '倉石暁', title: '✝本質✝の狂信者', rarity: 'SR', type: '本質', emoji: '📜', speaker: 'kuraishi',
+    id: 'kuraishi', name: '倉石暁', title: '✝本質✝の狂信者', rarity: 'SR', type: '本質', emoji: '📜', speaker: 'kuraishi', portrait: PORTRAITS.kuraishi,
     atk: 26, hp: 150, spd: 1.05, prod: 0.8,
     skill: { name: 'グレートチェーン', kind: 'multi', power: 0.8, hits: 5, charge: 110, line: '前-原✝本質✝→原✝本質✝→✝本質✝→亜✝本質✝→非✝本質✝！', desc: 'ランダムに5回攻撃（ATK×80%）' },
     passive: { desc: 'クリック力+25%（全て記録されている）', scope: 'owned', mods: { clickPct: 0.25 } },
@@ -267,7 +285,7 @@ export const UNITS: UnitDef[] = [
     quote: '地面は忘れない。', desc: '地理教師。三年間同じ地図を見せて、見る側が変わるのを待てる。',
   },
   {
-    id: 'feikatsu', name: 'フェイカツ', title: '概念', rarity: 'UR', type: '本質', emoji: '🎭', speaker: 'feikatsu',
+    id: 'feikatsu', name: 'フェイカツ', title: '概念', rarity: 'UR', type: '本質', emoji: '🎭', speaker: 'feikatsu', portrait: PORTRAITS.feikatsu,
     atk: 52, hp: 300, spd: 1.1, prod: 5,
     skill: { name: '受験ナビ荒らし', kind: 'multi', power: 1.2, hits: 6, charge: 120, line: '受験生よ、来い。✝', desc: 'ランダムに6回攻撃（ATK×120%）' },
     passive: { desc: 'コーンスープ缶獲得+25%・黄金✝出現+15%', scope: 'owned', mods: { canPct: 0.25, goldenRate: 0.15 } },
