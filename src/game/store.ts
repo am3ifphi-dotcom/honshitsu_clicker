@@ -1,0 +1,837 @@
+import { create } from 'zustand';
+import type { Buff, GameData, Line, OwnedUnit, PrestigeDef, PullResult, Rarity, Reward, RewardSummary, Toast } from './types';
+import {
+  derive, computeMods, xpToNext, spTotal, spSpent, levelCap, unitLevelCost, bulkCost, maxAffordable,
+  gachaRates, pityMax, rollWeighted, rebirthGain, devToPower, rarityRank, RARITY_REFUND, RARITIES, unitStats,
+} from './formulas';
+import { UNITS, UNIT_MAP } from './data/units';
+import { ITEM_MAP, EQUIPS, DROP_CONSUMABLES, SHOP, EQUIP_WEIGHTS, LOSTBOX_WEIGHTS } from './data/items';
+import type { ShopEntry } from './data/items';
+import { FAC_MAP } from './data/facilities';
+import { NODE_MAP, PRESTIGE_MAP } from './data/skills';
+import { ACHIEVEMENTS } from './data/achievements';
+import { DEV_EVENTS, DEV_THRESHOLDS, FACILITY_EVENTS, replyTo } from './data/chatter';
+import { fmt } from './format';
+
+const SAVE_KEY = 'honshitsu-leak-save-v1';
+
+export interface BattleCtx {
+  kind: 'story' | 'league' | 'endless';
+  id: string;
+  rec: number;
+  reward?: Reward;
+  level?: number;
+}
+
+interface Actions {
+  init: () => number;
+  save: () => void;
+  tick: () => void;
+  click: () => { amount: number; crit: boolean };
+  clickGolden: () => string | null;
+  buyFacility: (id: string, mode: number | 'max') => void;
+  levelUp: (id: string, times: number | 'max') => void;
+  toggleParty: (id: string) => void;
+  autoParty: () => void;
+  equip: (unitId: string, itemId: string | null) => void;
+  pull: (count: 1 | 10, useTicket?: boolean) => PullResult[] | null;
+  allocSkill: (id: string) => void;
+  resetSkills: () => void;
+  useItem: (id: string, unitId?: string) => boolean;
+  consumeItem: (id: string) => boolean;
+  buyShop: (id: string) => void;
+  openLostBox: () => string | null;
+  winBattle: (ctx: BattleCtx) => RewardSummary;
+  loseBattle: () => void;
+  rebirth: () => number;
+  buyPrestige: (id: string) => void;
+  checkAchievements: () => void;
+  pushChat: (s: string, t: string) => void;
+  pushLines: (lines: Line[], gap?: number) => void;
+  toast: (text: string, kind?: Toast['kind']) => void;
+  userSay: (text: string) => void;
+  processLevel: () => void;
+  markTitleSeen: () => void;
+  hardReset: () => void;
+  exportSave: () => string;
+  importSave: (str: string) => boolean;
+}
+
+export type GameStore = GameData & Actions;
+
+let msgId = 100;
+let toastId = 0;
+let initialized = false;
+
+function fresh(): GameData {
+  const now = Date.now();
+  return {
+    honshitsu: 0,
+    totalEarned: 0,
+    allTimeEarned: 0,
+    cans: 50,
+    memories: 0,
+    totalMemories: 0,
+    rebirths: 0,
+    clicks: 0,
+    allClicks: 0,
+    facilities: {},
+    units: { ryoma: { level: 1, star: 0, equip: null }, sub: { level: 1, star: 0, equip: null } },
+    party: ['ryoma', 'sub', null, null],
+    items: { hotsoup: 3, jiroitem: 1, ticket: 1 },
+    skills: {},
+    prestige: {},
+    level: 1,
+    xp: 0,
+    bonusSP: 0,
+    story: {},
+    league: {},
+    endless: 0,
+    pulls: 0,
+    pity: 0,
+    achievements: {},
+    buffs: [],
+    maxDev: 0,
+    bestDev: 0,
+    goldenClicks: 0,
+    itemsUsed: 0,
+    battlesWon: 0,
+    battlesLost: 0,
+    shopBought: {},
+    lostBoxOpened: 0,
+    canAcc: 0,
+    autoAcc: 0,
+    nextGolden: 40,
+    lastTick: now,
+    lastSave: now,
+    hadZeroCans: false,
+    seenTitle: false,
+    golden: null,
+    chat: [
+      { id: 1, s: 'sys', t: '✝ グループLINE「理数科B組（✝）」に ✝本質✝（あなた）が参加しました' },
+      { id: 2, s: 'ryoma', t: 'お、なんか漏れてる。これまじ✝本質✝' },
+      { id: 3, s: 'sys', t: '（中央の✝をクリックして✝本質✝を漏らそう。下の入力欄から発言もできる）' },
+    ],
+    toasts: [],
+  };
+}
+
+const TRANSIENT: (keyof GameData)[] = ['golden', 'chat', 'toasts'];
+const PERSIST_KEYS = (Object.keys(fresh()) as (keyof GameData)[]).filter((k) => !TRANSIENT.includes(k));
+
+function serialize(s: GameData): string {
+  const out: Record<string, unknown> = {};
+  for (const k of PERSIST_KEYS) out[k] = s[k];
+  out.lastSave = Date.now();
+  return JSON.stringify(out);
+}
+
+function addBuff(buffs: Buff[], nb: Buff): Buff[] {
+  return [...buffs.filter((b) => b.id !== nb.id), nb];
+}
+
+function rollEquip(weights: Record<Rarity, number>): string {
+  const r = rollWeighted(weights);
+  const pool = EQUIPS.filter((e) => e.rarity === r);
+  const list = pool.length ? pool : EQUIPS;
+  return list[Math.floor(Math.random() * list.length)].id;
+}
+
+export const shopPrice = (e: ShopEntry, ps: number, bought: number) => Math.ceil(Math.max(e.min, ps * e.sec) * Math.pow(e.grow, bought));
+export const lostBoxPrice = (ps: number, n: number) => Math.ceil(Math.max(300, ps * 60) * Math.pow(1.08, n));
+export const prestigeCost = (p: PrestigeDef, lv: number) => Math.floor(p.baseCost * Math.pow(p.costMult, lv));
+
+function toB64(str: string) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function fromB64(b64: string) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function sanitize(data: Partial<GameData>): GameData {
+  const base = fresh();
+  const merged: GameData = { ...base, ...data, golden: null, toasts: [], chat: base.chat } as GameData;
+  merged.units = merged.units && typeof merged.units === 'object' ? merged.units : base.units;
+  for (const id of Object.keys(merged.units)) if (!UNIT_MAP[id]) delete merged.units[id];
+  const party = Array.isArray(merged.party) ? merged.party : base.party;
+  merged.party = [0, 1, 2, 3].map((i) => {
+    const id = party[i];
+    return id && merged.units[id] ? id : null;
+  });
+  merged.buffs = Array.isArray(merged.buffs) ? merged.buffs : [];
+  return merged;
+}
+
+export const useGame = create<GameStore>()((set, get) => ({
+  ...fresh(),
+
+  init: () => {
+    if (initialized) return 0;
+    initialized = true;
+    let offlineGain = 0;
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (raw) {
+        const merged = sanitize(JSON.parse(raw));
+        set(merged);
+        const d = derive(get());
+        const now = Date.now();
+        const dt = (now - (merged.lastSave || now)) / 1000;
+        if (dt > 60) {
+          const cap = (8 + d.m.offlineHours) * 3600;
+          offlineGain = d.perSecBase * Math.min(dt, cap);
+          set((st) => ({ honshitsu: st.honshitsu + offlineGain, totalEarned: st.totalEarned + offlineGain, allTimeEarned: st.allTimeEarned + offlineGain }));
+        }
+        set({ lastTick: now });
+        get().pushChat('sys', 'おかえり。✝本質✝は漏れ続けていた。');
+      } else {
+        set({ lastTick: Date.now() });
+      }
+    } catch {
+      set({ lastTick: Date.now() });
+    }
+    return offlineGain;
+  },
+
+  save: () => {
+    try {
+      localStorage.setItem(SAVE_KEY, serialize(get()));
+    } catch {
+      /* storage full or disabled */
+    }
+  },
+
+  tick: () => {
+    const s = get();
+    const now = Date.now();
+    let dt = (now - s.lastTick) / 1000;
+    if (dt <= 0) return;
+    if (dt > 10) dt = 10;
+    const d = derive(s);
+    let gain = d.perSec * dt;
+    let autoAcc = s.autoAcc + d.m.autoClick * dt;
+    const autoClicks = Math.floor(autoAcc);
+    autoAcc -= autoClicks;
+    if (autoClicks > 0) gain += d.clickPower * autoClicks;
+    let canAcc = s.canAcc + (s.facilities['vending'] || 0) * 0.002 * (1 + d.m.canPct) * dt;
+    const newCans = Math.floor(canAcc);
+    canAcc -= newCans;
+    let nextGolden = s.nextGolden - dt;
+    let golden = s.golden;
+    if (golden && golden.until < now) golden = null;
+    if (!golden && nextGolden <= 0) {
+      golden = { id: now, x: 10 + Math.random() * 78, y: 10 + Math.random() * 70, until: now + 13000 };
+      nextGolden = (60 + Math.random() * 90) / (1 + d.m.goldenRate);
+    }
+    const buffs = s.buffs.some((b) => b.until <= now) ? s.buffs.filter((b) => b.until > now) : s.buffs;
+    const maxDev = Math.max(s.maxDev, d.totalDev);
+    const bestDev = Math.max(s.bestDev, d.totalDev);
+    set({
+      lastTick: now,
+      honshitsu: s.honshitsu + gain,
+      totalEarned: s.totalEarned + gain,
+      allTimeEarned: s.allTimeEarned + gain,
+      autoAcc,
+      canAcc,
+      cans: s.cans + newCans,
+      nextGolden,
+      golden,
+      buffs,
+      maxDev,
+      bestDev,
+      xp: s.xp + 0.5 * (1 + d.m.xpPct) * dt,
+    });
+    if (newCans > 0 && Math.random() < 0.25) get().pushChat('izumi', `自販機からコーンスープ缶が出てきた（+${newCans}）`);
+    let crossed = 0;
+    for (const t of DEV_THRESHOLDS) if (s.maxDev < t && maxDev >= t) crossed = t;
+    if (crossed) {
+      get().pushLines(DEV_EVENTS[crossed]);
+      if (crossed >= 60 && s.maxDev < 60) get().toast('🎓 総合偏差値60到達！ 卒業（転生）が可能になった', 'rare');
+    }
+    get().processLevel();
+  },
+
+  processLevel: () => {
+    const s = get();
+    let level = s.level;
+    let xp = s.xp;
+    let ups = 0;
+    while (xp >= xpToNext(level) && ups < 200) {
+      xp -= xpToNext(level);
+      level++;
+      ups++;
+    }
+    if (ups > 0) {
+      set({ level, xp });
+      get().toast(`🎓 学年レベル${level}！ スキルポイント+${ups}`, 'good');
+      if (s.level < 10 && level >= 10) get().pushLines([['sys', '2年生に進級した'], ['ryoma', '二年目の✝本質✝始まるな'], ['mie', '始まらない。始めるな']]);
+      else if (s.level < 20 && level >= 20) get().pushLines([['sys', '3年生に進級した'], ['kuraishi', '先輩方。最終年度です']]);
+      else if (s.level < 30 && level >= 30) get().pushLines([['sys', '留年した（卒業＝転生を検討しよう）'], ['mie', '留年するな'], ['ryoma', '留年の✝本質✝']]);
+    }
+  },
+
+  click: () => {
+    const s = get();
+    const d = derive(s);
+    const crit = Math.random() < d.m.critChance;
+    const amount = d.clickPower * (crit ? d.m.critMult : 1);
+    set({
+      honshitsu: s.honshitsu + amount,
+      totalEarned: s.totalEarned + amount,
+      allTimeEarned: s.allTimeEarned + amount,
+      clicks: s.clicks + 1,
+      allClicks: s.allClicks + 1,
+      xp: s.xp + (1 + d.m.xpPct),
+    });
+    const c = s.allClicks + 1;
+    if (c === 420) get().pushLines([['kuraishi', '✝クリック、四百二十回目です'], ['mie', '俺の「は？」と同じ回数にするな']]);
+    if (c === 1000) get().pushLines([['ryoma', '千回クリック。指の✝本質✝'], ['sato', '指、大丈夫か']]);
+    else if (c % 150 === 0) {
+      const pool: Line[][] = [
+        [['mie', 'クリックしすぎだろ'], ['ryoma', '指の✝本質✝']],
+        [['kuraishi', `✝クリック、${c}回目です`], ['mie', '数えるな']],
+        [['sato', '連打うるさい'], ['mie', 'お前のゲーム音もうるさい']],
+        [['rei', '連打のリズム、面白いね']],
+        [['terachi', 'えー……「クリックとは何か」。……紙に書いて読みます']],
+        [['izumi', '大喜利。お題「✝を連打する人の気持ち」'], ['sato', '指が勝手に動く']],
+        [['meshino', 'Keep clicking. Clicking is also ✝本質✝.'], ['mie', '日本語で']],
+      ];
+      get().pushLines(pool[Math.floor(Math.random() * pool.length)]);
+    }
+    get().processLevel();
+    return { amount, crit };
+  },
+
+  clickGolden: () => {
+    const s = get();
+    if (!s.golden) return null;
+    const d = derive(s);
+    const now = Date.now();
+    const r = Math.random();
+    let msg = '';
+    const patch: Partial<GameData> = { golden: null, goldenClicks: s.goldenClicks + 1 };
+    if (r < 0.08) {
+      msg = '三重に「は？」と言われた。何も起きなかった。';
+      get().pushLines([['mie', 'は？'], ['kuraishi', '記録しました']]);
+    } else if (r < 0.4) {
+      msg = '✝本質✝フィーバー！ 毎秒本質×7（30秒）';
+      patch.buffs = addBuff(s.buffs, { id: 'fever', name: '✝本質✝フィーバー', kind: 'prod', mult: 7, until: now + 30000 });
+    } else if (r < 0.6) {
+      msg = 'まじ✝本質✝連打！ クリック×30（13秒）';
+      patch.buffs = addBuff(s.buffs, { id: 'frenzy', name: 'まじ✝本質✝連打', kind: 'click', mult: 30, until: now + 13000 });
+    } else if (r < 0.82) {
+      const amt = Math.max(50, Math.min(s.honshitsu * 0.2, d.perSecBase * 900) + d.perSecBase * 60 + 10 * d.clickBase);
+      msg = `本質が降りてきた！ +${fmt(amt)}`;
+      patch.honshitsu = s.honshitsu + amt;
+      patch.totalEarned = s.totalEarned + amt;
+      patch.allTimeEarned = s.allTimeEarned + amt;
+    } else {
+      const c = Math.floor((3 + Math.floor(Math.random() * 5) + d.m.goldenCan * 2) * (1 + d.m.canPct));
+      msg = `コーンスープの帰還！ 🥫+${c}`;
+      patch.cans = s.cans + c;
+    }
+    set(patch);
+    get().toast('✨ ' + msg, 'rare');
+    return msg;
+  },
+
+  buyFacility: (id, mode) => {
+    const s = get();
+    const f = FAC_MAP[id];
+    if (!f) return;
+    const d = derive(s);
+    const base = f.baseCost * Math.max(0.2, 1 - d.m.costReduce);
+    const owned = s.facilities[id] || 0;
+    const n = mode === 'max' ? maxAffordable(base, owned, s.honshitsu) : mode;
+    if (n <= 0) return;
+    const cost = bulkCost(base, owned, n);
+    if (cost > s.honshitsu * (1 + 1e-9) + 1e-6) return;
+    set({
+      honshitsu: Math.max(0, s.honshitsu - cost),
+      facilities: { ...s.facilities, [id]: owned + n },
+      xp: s.xp + 1.5 * n * (1 + d.m.xpPct),
+    });
+    if (owned === 0 && FACILITY_EVENTS[id]) get().pushLines(FACILITY_EVENTS[id]);
+    get().processLevel();
+  },
+
+  levelUp: (id, times) => {
+    const s = get();
+    const def = UNIT_MAP[id];
+    const u = s.units[id];
+    if (!def || !u) return;
+    const cap = levelCap(u, computeMods(s));
+    let lv = u.level;
+    let money = s.honshitsu;
+    let n = 0;
+    const limit = times === 'max' ? 9999 : times;
+    while (n < limit && lv < cap) {
+      const c = unitLevelCost(def, lv);
+      if (c > money) break;
+      money -= c;
+      lv++;
+      n++;
+    }
+    if (n === 0) return;
+    set({ honshitsu: money, units: { ...s.units, [id]: { ...u, level: lv } } });
+  },
+
+  toggleParty: (id) => {
+    const s = get();
+    if (!s.units[id]) return;
+    const party = [...s.party];
+    const idx = party.indexOf(id);
+    if (idx >= 0) {
+      party[idx] = null;
+    } else {
+      const empty = party.indexOf(null);
+      if (empty < 0) {
+        get().toast('編成がいっぱい（4人まで）。誰かを外してね', 'bad');
+        return;
+      }
+      party[empty] = id;
+    }
+    set({ party });
+  },
+
+  autoParty: () => {
+    const s = get();
+    const m = computeMods(s);
+    const ranked = Object.keys(s.units)
+      .filter((id) => UNIT_MAP[id])
+      .map((id) => ({ id, p: unitStats(UNIT_MAP[id], s.units[id], m).power }))
+      .sort((a, b) => b.p - a.p)
+      .slice(0, 4)
+      .map((x) => x.id);
+    const party: (string | null)[] = [0, 1, 2, 3].map((i) => ranked[i] ?? null);
+    set({ party });
+    get().toast('おまかせ編成した（戦闘力の高い順）', 'info');
+  },
+
+  equip: (unitId, itemId) => {
+    const s = get();
+    const u = s.units[unitId];
+    if (!u) return;
+    const items = { ...s.items };
+    if (itemId && (items[itemId] || 0) <= 0) return;
+    if (u.equip) items[u.equip] = (items[u.equip] || 0) + 1;
+    if (itemId) items[itemId] = (items[itemId] || 0) - 1;
+    set({ items, units: { ...s.units, [unitId]: { ...u, equip: itemId } } });
+  },
+
+  pull: (count, useTicket = false) => {
+    const s = get();
+    const m = computeMods(s);
+    const cost = count === 10 ? 45 : 5;
+    if (useTicket) {
+      if ((s.items['ticket'] || 0) < count) return null;
+    } else if (s.cans < cost) return null;
+    const rates = gachaRates(m);
+    const pmax = pityMax(m);
+    let pity = s.pity;
+    const units: Record<string, OwnedUnit> = { ...s.units };
+    const party = [...s.party];
+    let refundTotal = 0;
+    const rolled: number[] = [];
+    const results: PullResult[] = [];
+    for (let i = 0; i < count; i++) {
+      pity++;
+      let r = rollWeighted(rates);
+      if (count === 10 && i === 9) {
+        const best = Math.max(rarityRank(r), ...rolled);
+        if (m.tenGuarantee > 0 && best < rarityRank('SSR')) r = 'SSR';
+        else if (best < rarityRank('SR')) r = 'SR';
+      }
+      if (pity >= pmax && rarityRank(r) < rarityRank('UR')) r = 'UR';
+      if (rarityRank(r) >= rarityRank('UR')) pity = 0;
+      rolled.push(rarityRank(r));
+      const pool = UNITS.filter((u) => u.rarity === r);
+      const def = pool[Math.floor(Math.random() * pool.length)];
+      const cur = units[def.id];
+      if (!cur) {
+        units[def.id] = { level: 1, star: 0, equip: null };
+        const e = party.indexOf(null);
+        if (e >= 0) party[e] = def.id;
+        results.push({ id: def.id, isNew: true, star: 0, refund: 0 });
+      } else if (cur.star < 5) {
+        units[def.id] = { ...cur, star: cur.star + 1 };
+        results.push({ id: def.id, isNew: false, star: cur.star + 1, refund: 0 });
+      } else {
+        const rf = RARITY_REFUND[def.rarity];
+        refundTotal += rf;
+        results.push({ id: def.id, isNew: false, star: 5, refund: rf });
+      }
+    }
+    const newCans = useTicket ? s.cans + refundTotal : s.cans - cost + refundTotal;
+    const items = useTicket ? { ...s.items, ticket: (s.items['ticket'] || 0) - count } : s.items;
+    set({
+      units,
+      party,
+      pity,
+      pulls: s.pulls + count,
+      cans: newCans,
+      items,
+      hadZeroCans: s.hadZeroCans || newCans <= 0,
+      xp: s.xp + 3 * count * (1 + m.xpPct),
+    });
+    let best = results[0];
+    for (const r of results) if (rarityRank(UNIT_MAP[r.id].rarity) > rarityRank(UNIT_MAP[best.id].rarity)) best = r;
+    const bdef = UNIT_MAP[best.id];
+    if (rarityRank(bdef.rarity) >= rarityRank('SSR')) {
+      const lines: Line[] = [['sys', `✝ ${bdef.name}【${bdef.rarity}】が教室に漏れ出した！`]];
+      if (bdef.speaker) lines.push([bdef.speaker, bdef.quote]);
+      if (bdef.id === 'rei') lines.push(['mie', 'なんで召喚で来るんだよ'], ['rei', '家が近いから']);
+      else if (bdef.rarity === 'LR') lines.push(['kuraishi', '✝LR✝……！ 聖典に記録します'], ['mie', 'は？']);
+      else lines.push(['ryoma', '出た！ これまじ✝本質✝']);
+      get().pushLines(lines, 900);
+    } else if (count === 10 && rarityRank(bdef.rarity) <= rarityRank('SR')) {
+      get().pushLines([['mie', '10連でそれか'], ['ryoma', 'ハズレも✝本質✝']], 900);
+    }
+    get().processLevel();
+    return results;
+  },
+
+  allocSkill: (id) => {
+    const s = get();
+    const n = NODE_MAP[id];
+    if (!n) return;
+    const r = s.skills[id] || 0;
+    if (r >= n.max) return;
+    if (spTotal(s) - spSpent(s) < n.cost) {
+      get().toast('スキルポイントが足りない（学年レベルを上げよう）', 'bad');
+      return;
+    }
+    if (!n.req.every((q) => (s.skills[q] || 0) > 0)) {
+      get().toast('前提スキルが未習得', 'bad');
+      return;
+    }
+    set({ skills: { ...s.skills, [id]: r + 1 } });
+    if (n.capstone) get().pushLines([['sys', `奥義「${n.name}」を習得した`], ['ryoma', 'ビルドの✝本質✝'], ['mie', 'ビルドに✝本質✝をつけるな']]);
+  },
+
+  resetSkills: () => {
+    set({ skills: {} });
+    get().toast('記憶喪失した。スキルポイントが全部戻った', 'info');
+    get().pushLines([['mie', '何も覚えてないのか'], ['ryoma', '忘れても地面は忘れない']]);
+  },
+
+  useItem: (id, unitId) => {
+    const s = get();
+    const def = ITEM_MAP[id];
+    if (!def?.effect || (s.items[id] || 0) <= 0) return false;
+    const e = def.effect;
+    const now = Date.now();
+    const patch: Partial<GameData> = {};
+    switch (e.kind) {
+      case 'prodBuff':
+        patch.buffs = addBuff(s.buffs, { id: 'item_' + id, name: def.name, kind: 'prod', mult: e.mult, until: now + e.duration * 1000 });
+        break;
+      case 'clickBuff':
+        patch.buffs = addBuff(s.buffs, { id: 'item_' + id, name: def.name, kind: 'click', mult: e.mult, until: now + e.duration * 1000 });
+        break;
+      case 'honshitsu': {
+        const d = derive(s);
+        const amt = Math.max(500, d.perSecBase * e.seconds);
+        patch.honshitsu = s.honshitsu + amt;
+        patch.totalEarned = s.totalEarned + amt;
+        patch.allTimeEarned = s.allTimeEarned + amt;
+        get().toast(`${def.emoji} +${fmt(amt)} ✝本質✝`, 'good');
+        break;
+      }
+      case 'golden':
+        patch.golden = { id: now, x: 20 + Math.random() * 60, y: 20 + Math.random() * 55, until: now + 13000 };
+        break;
+      case 'sp':
+        patch.bonusSP = s.bonusSP + 1;
+        get().toast('📘 スキルポイント+1', 'good');
+        break;
+      case 'levelUp': {
+        if (!unitId) return false;
+        const u = s.units[unitId];
+        if (!u) return false;
+        const cap = levelCap(u, computeMods(s));
+        if (u.level >= cap) {
+          get().toast('レベル上限です（凸で上限アップ）', 'bad');
+          return false;
+        }
+        patch.units = { ...s.units, [unitId]: { ...u, level: Math.min(cap, u.level + e.levels) } };
+        break;
+      }
+      case 'star': {
+        if (!unitId) return false;
+        const u = s.units[unitId];
+        if (!u) return false;
+        if (u.star >= 5) {
+          get().toast('すでに5凸です', 'bad');
+          return false;
+        }
+        patch.units = { ...s.units, [unitId]: { ...u, star: u.star + 1 } };
+        break;
+      }
+      default:
+        return false;
+    }
+    patch.items = { ...s.items, [id]: (s.items[id] || 0) - 1 };
+    patch.itemsUsed = s.itemsUsed + 1;
+    set(patch);
+    return true;
+  },
+
+  consumeItem: (id) => {
+    const s = get();
+    if ((s.items[id] || 0) <= 0) return false;
+    set({ items: { ...s.items, [id]: s.items[id] - 1 }, itemsUsed: s.itemsUsed + 1 });
+    return true;
+  },
+
+  buyShop: (id) => {
+    const s = get();
+    const entry = SHOP.find((e) => e.id === id);
+    if (!entry) return;
+    const d = derive(s);
+    const price = shopPrice(entry, d.perSecBase, s.shopBought[id] || 0);
+    if (s.honshitsu < price) {
+      get().toast('✝本質✝が足りない', 'bad');
+      return;
+    }
+    const patch: Partial<GameData> = {
+      honshitsu: s.honshitsu - price,
+      shopBought: { ...s.shopBought, [id]: (s.shopBought[id] || 0) + 1 },
+    };
+    if (id === 'cans5') patch.cans = s.cans + 5;
+    else patch.items = { ...s.items, [id]: (s.items[id] || 0) + 1 };
+    set(patch);
+  },
+
+  openLostBox: () => {
+    const s = get();
+    const d = derive(s);
+    const price = lostBoxPrice(d.perSecBase, s.lostBoxOpened);
+    if (s.honshitsu < price) {
+      get().toast('✝本質✝が足りない', 'bad');
+      return null;
+    }
+    const id = rollEquip(LOSTBOX_WEIGHTS);
+    set({ honshitsu: s.honshitsu - price, lostBoxOpened: s.lostBoxOpened + 1, items: { ...s.items, [id]: (s.items[id] || 0) + 1 } });
+    return id;
+  },
+
+  winBattle: (ctx) => {
+    const s = get();
+    const d = derive(s);
+    const m = d.m;
+    const first = ctx.kind === 'story' ? !s.story[ctx.id] : ctx.kind === 'league' ? !s.league[ctx.id] : (ctx.level ?? 1) > s.endless;
+    let hs = (devToPower(ctx.rec) * 0.6 + d.perSecBase * 30) * (1 + m.rewardPct) * (first ? 1.5 : 1);
+    if (ctx.kind === 'endless') hs *= 1.5;
+    let cans = 0;
+    const gained: Record<string, number> = {};
+    const add = (k: string, n: number) => {
+      gained[k] = (gained[k] || 0) + n;
+    };
+    let unit: string | undefined;
+    let sp = 0;
+    if (first && ctx.reward) {
+      cans += ctx.reward.cans || 0;
+      if (ctx.reward.items) for (const k of Object.keys(ctx.reward.items)) add(k, ctx.reward.items[k]);
+      unit = ctx.reward.unit;
+    }
+    if (ctx.kind === 'endless') cans += first ? 5 + Math.floor((ctx.level ?? 1) / 2) : 2;
+    else if (!first) cans += ctx.kind === 'story' ? 1 : 2 + Math.floor(Math.random() * 2);
+    cans = Math.floor(cans * (1 + m.canPct));
+    if (first && ctx.kind === 'story') sp = 1;
+    if (Math.random() < Math.min(0.95, (first ? 0.6 : 0.3) * (1 + m.dropPct))) add(rollEquip(EQUIP_WEIGHTS(ctx.rec)), 1);
+    if (Math.random() < Math.min(0.95, 0.55 * (1 + m.dropPct))) add(DROP_CONSUMABLES[Math.floor(Math.random() * DROP_CONSUMABLES.length)], 1);
+    const xp = Math.floor((10 + ctx.rec * 0.8) * (1 + m.xpPct));
+    const items = { ...s.items };
+    for (const k of Object.keys(gained)) items[k] = (items[k] || 0) + gained[k];
+    const units = { ...s.units };
+    let party = s.party;
+    let unitResult: RewardSummary['unitResult'];
+    if (unit && UNIT_MAP[unit]) {
+      const cur = units[unit];
+      if (!cur) {
+        units[unit] = { level: 1, star: 0, equip: null };
+        unitResult = 'new';
+        const e = party.indexOf(null);
+        if (e >= 0) {
+          party = [...party];
+          party[e] = unit;
+        }
+      } else if (cur.star < 5) {
+        units[unit] = { ...cur, star: cur.star + 1 };
+        unitResult = 'star';
+      } else {
+        unitResult = 'refund';
+        cans += RARITY_REFUND[UNIT_MAP[unit].rarity];
+      }
+    }
+    const patch: Partial<GameData> = {
+      honshitsu: s.honshitsu + hs,
+      totalEarned: s.totalEarned + hs,
+      allTimeEarned: s.allTimeEarned + hs,
+      cans: s.cans + cans,
+      xp: s.xp + xp,
+      items,
+      units,
+      party,
+      bonusSP: s.bonusSP + sp,
+      battlesWon: s.battlesWon + 1,
+    };
+    if (ctx.kind === 'story') patch.story = { ...s.story, [ctx.id]: true };
+    if (ctx.kind === 'league') patch.league = { ...s.league, [ctx.id]: true };
+    if (ctx.kind === 'endless') patch.endless = Math.max(s.endless, ctx.level ?? 1);
+    set(patch);
+    if (unit && unitResult === 'new') {
+      const ud = UNIT_MAP[unit];
+      const lines: Line[] = [['sys', `✝ ${ud.name}がグループに参加しました`]];
+      if (ud.speaker) lines.push([ud.speaker, ud.quote]);
+      get().pushLines(lines);
+    }
+    get().processLevel();
+    return { honshitsu: hs, cans, xp, items: gained, unit, unitResult, sp, first };
+  },
+
+  loseBattle: () => {
+    const s = get();
+    set({ battlesLost: s.battlesLost + 1 });
+    const pool: Line[][] = [
+      [['mie', 'チャイム鳴ったな'], ['ryoma', '負けも✝本質✝']],
+      [['rei', '部員のレベル上げたら？ 面白くなるよ']],
+      [['sato', '偏差値足りてない'], ['mie', 'お前が言うな']],
+      [['sakura', '敗北の第一法則：偏差値が足りない']],
+    ];
+    get().pushLines(pool[Math.floor(Math.random() * pool.length)]);
+  },
+
+  rebirth: () => {
+    const s = get();
+    const m = computeMods(s);
+    const gain = rebirthGain(s, m);
+    if (gain <= 0) return 0;
+    const units: Record<string, OwnedUnit> = {};
+    for (const id of Object.keys(s.units)) units[id] = { ...s.units[id], level: 1 };
+    const lava = s.prestige['p_lava'] || 0;
+    const soup = s.prestige['p_soup'] || 0;
+    set({
+      honshitsu: lava > 0 ? 1000 * Math.pow(10, lava) : 0,
+      totalEarned: 0,
+      facilities: {},
+      units,
+      level: 1,
+      xp: 0,
+      skills: {},
+      buffs: [],
+      maxDev: 0,
+      shopBought: {},
+      lostBoxOpened: 0,
+      memories: s.memories + gain,
+      totalMemories: s.totalMemories + gain,
+      rebirths: s.rebirths + 1,
+      cans: s.cans + soup * 30,
+      golden: null,
+      nextGolden: 30,
+      clicks: 0,
+      autoAcc: 0,
+      canAcc: 0,
+      lastTick: Date.now(),
+    });
+    get().pushLines([
+      ['sys', `コーンスープ補充業者のトラックに轢かれて転生した……（${s.rebirths + 1}周目）`],
+      ['narr', '気がつくと、また入学式だった。'],
+      ['ryoma', 'お、なんか漏れてる。これまじ✝本質✝'],
+      ['mie', '何周目でも言うのか'],
+      ['heikatsu', '地面は忘れない'],
+    ]);
+    get().save();
+    return gain;
+  },
+
+  buyPrestige: (id) => {
+    const s = get();
+    const p = PRESTIGE_MAP[id];
+    if (!p) return;
+    const lv = s.prestige[id] || 0;
+    if (lv >= p.max) return;
+    const cost = prestigeCost(p, lv);
+    if (s.memories < cost) return;
+    set({ memories: s.memories - cost, prestige: { ...s.prestige, [id]: lv + 1 } });
+  },
+
+  checkAchievements: () => {
+    const s = get();
+    const d = derive(s);
+    const newly = ACHIEVEMENTS.filter((a) => !s.achievements[a.id] && a.cond(s, d));
+    if (!newly.length) return;
+    const ach = { ...s.achievements };
+    let cans = 0;
+    for (const a of newly) {
+      ach[a.id] = true;
+      cans += a.reward;
+    }
+    set({ achievements: ach, cans: s.cans + cans });
+    for (const a of newly) {
+      get().toast(`🏆 実績「${a.name}」解除！ 🥫+${a.reward}`, 'good');
+      get().pushChat('kuraishi', `記録しました。実績「${a.name}」。✝本質✝年鑑に追記します`);
+    }
+  },
+
+  pushChat: (s, t) => {
+    set((st) => ({ chat: [...st.chat, { id: ++msgId, s, t }].slice(-80) }));
+  },
+
+  pushLines: (lines, gap = 1100) => {
+    lines.forEach((l, i) => {
+      setTimeout(() => get().pushChat(l[0], l[1]), i * gap);
+    });
+  },
+
+  toast: (text, kind = 'info') => {
+    const id = ++toastId;
+    set((st) => ({ toasts: [...st.toasts, { id, text, kind }].slice(-5) }));
+    setTimeout(() => set((st) => ({ toasts: st.toasts.filter((t) => t.id !== id) })), 3800);
+  },
+
+  userSay: (text) => {
+    const t = text.slice(0, 80);
+    get().pushChat('you', t);
+    const lines = replyTo(t);
+    lines.forEach((l, i) => setTimeout(() => get().pushChat(l[0], l[1]), 700 + i * 1000));
+  },
+
+  markTitleSeen: () => set({ seenTitle: true }),
+
+  hardReset: () => {
+    try {
+      localStorage.removeItem(SAVE_KEY);
+    } catch {
+      /* ignore */
+    }
+    set({ ...fresh() });
+  },
+
+  exportSave: () => {
+    get().save();
+    return toB64(serialize(get()));
+  },
+
+  importSave: (str) => {
+    try {
+      const json = fromB64(str.trim());
+      const data = JSON.parse(json);
+      if (!data || typeof data !== 'object' || typeof data.honshitsu !== 'number') return false;
+      set({ ...sanitize(data), lastTick: Date.now() });
+      get().save();
+      return true;
+    } catch {
+      return false;
+    }
+  },
+}));
+
+export { RARITIES };
