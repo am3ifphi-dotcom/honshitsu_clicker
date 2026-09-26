@@ -64,6 +64,7 @@ interface Actions {
   hardReset: () => void;
   exportSave: () => string;
   importSave: (str: string) => boolean;
+  restoreSnapshot: () => boolean;
 }
 
 export type GameStore = GameData & Actions;
@@ -162,6 +163,25 @@ function sanitize(raw: any): GameData {
   out.golden = null;
   out.toasts = [];
   return out as GameData;
+}
+
+// ===== 転生直前スナップショット（最高記録を保持） =====
+export const SNAP_KEY = 'honshitsu-leak-best-snapshot-v1';
+export type SnapInfo = { at: number; allTimeEarned: number; rebirths: number; ultraRebirths: number; kind: string };
+function snapshotBest(s: GameData, kind: string) {
+  try {
+    const cur = localStorage.getItem(SNAP_KEY);
+    const prev = cur ? JSON.parse(cur) : null;
+    if (prev && (prev.info?.allTimeEarned ?? 0) > s.allTimeEarned) return;
+    const info: SnapInfo = { at: Date.now(), allTimeEarned: s.allTimeEarned, rebirths: s.rebirths, ultraRebirths: s.ultraRebirths, kind };
+    localStorage.setItem(SNAP_KEY, JSON.stringify({ info, data: serialize(s) }));
+  } catch { /* ignore */ }
+}
+export function getSnapInfo(): SnapInfo | null {
+  try {
+    const cur = localStorage.getItem(SNAP_KEY);
+    return cur ? JSON.parse(cur).info : null;
+  } catch { return null; }
 }
 
 // 読み込み失敗時はセーブを上書きしない（データ消失防止）
@@ -1013,6 +1033,7 @@ export const useGame = create<GameStore>()((set, get) => ({
     const m = computeMods(s);
     const gain = rebirthGain(s, m);
     if (gain <= 0) return 0;
+    snapshotBest(s, '転生');
     const units: Record<string, OwnedUnit> = {};
     for (const id of Object.keys(s.units)) units[id] = { ...s.units[id], level: 1 };
     const lava = s.prestige['p_lava'] || 0;
@@ -1056,6 +1077,7 @@ export const useGame = create<GameStore>()((set, get) => ({
     const m = computeMods(s);
     const gain = ultraRebirthGain(s, m);
     if (gain <= 0) return 0;
+    snapshotBest(s, 'ウルトラ転生');
     const units: Record<string, OwnedUnit> = {};
     for (const id of Object.keys(s.units)) units[id] = { ...s.units[id], level: 1 };
 
@@ -1372,6 +1394,7 @@ export const useGame = create<GameStore>()((set, get) => ({
   markTitleSeen: () => set({ seenTitle: true }),
 
   hardReset: () => {
+    snapshotBest(get(), '全消去');
     try {
       localStorage.removeItem(SAVE_KEY);
     } catch {
@@ -1383,6 +1406,20 @@ export const useGame = create<GameStore>()((set, get) => ({
   exportSave: () => {
     get().save();
     return toB64(serialize(get()));
+  },
+
+  restoreSnapshot: () => {
+    try {
+      const cur = localStorage.getItem(SNAP_KEY);
+      if (!cur) return false;
+      const data = JSON.parse(JSON.parse(cur).data);
+      saveBlocked = false;
+      set({ ...sanitize(data), lastTick: Date.now() });
+      get().save();
+      return true;
+    } catch {
+      return false;
+    }
   },
 
   importSave: (str) => {

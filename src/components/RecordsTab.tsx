@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGame } from '../game/store';
+import { useGame, getSnapInfo } from '../game/store';
 import { ACHIEVEMENTS } from '../game/data/achievements';
 import { UNITS } from '../game/data/units';
 import { fmt, fmtInt } from '../game/format';
@@ -91,6 +91,34 @@ export default function RecordsTab() {
             インポート
           </Btn>
         </div>
+        {(() => {
+          const snap = getSnapInfo();
+          return (
+            <div className="mt-3 rounded-lg bg-black/30 p-2 text-xs text-slate-300">
+              <div className="font-bold">🛟 最高記録の転生直前データから復元</div>
+              {snap ? (
+                <>
+                  <div className="mt-1 text-[11px] text-slate-400">
+                    {new Date(snap.at).toLocaleString()}（{snap.kind}直前）／累計 {fmt(snap.allTimeEarned)} ✝／転生 {snap.rebirths}回・ウルトラ {snap.ultraRebirths}回
+                  </div>
+                  <Btn
+                    small
+                    variant="ghost"
+                    onClick={() => {
+                      if (!confirm('現在の進行度を、最高記録の転生直前データで置き換えますか？')) return;
+                      const ok = useGame.getState().restoreSnapshot();
+                      useGame.getState().toast(ok ? '転生直前の最高記録から復元した' : '復元に失敗した', ok ? 'good' : 'bad');
+                    }}
+                  >
+                    復元する
+                  </Btn>
+                </>
+              ) : (
+                <div className="mt-1 text-[11px] text-slate-400">まだ記録なし（次に転生した時から自動で保存される）</div>
+              )}
+            </div>
+          );
+        })()}
         <p className="mt-3 text-[11px] text-slate-500">
           原作：『偏差値60の教室から✝本質✝が漏れ出している件について』をモチーフにしたファンメイドのゲームです。✝本質✝が何を意味するかは、最後まで遊んでもわかりません。
         </p>
