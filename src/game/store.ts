@@ -180,37 +180,92 @@ function fromB64(b64: string) {
   return new TextDecoder().decode(bytes);
 }
 
-function sanitize(data: Partial<GameData>): GameData {
-  const base = fresh();
-  const merged: GameData = {
-    ...base,
-    ...data,
-    golden: null,
-    toasts: [],
-    chat: base.chat,
-    // 既存セーブデータ互換性保証
-    ultraRebirths: typeof data.ultraRebirths === 'number' ? data.ultraRebirths : 0,
-    cores: typeof data.cores === 'number' ? data.cores : 0,
-    totalCores: typeof data.totalCores === 'number' ? data.totalCores : 0,
-    ultraPrestige: data.ultraPrestige && typeof data.ultraPrestige === 'object' ? data.ultraPrestige : {},
-    crystals: typeof data.crystals === 'number' ? data.crystals : 0,
-    totalCrystals: typeof data.totalCrystals === 'number' ? data.totalCrystals : 0,
-    awakening: data.awakening && typeof data.awakening === 'object' ? data.awakening : {},
-    bonds: data.bonds && typeof data.bonds === 'object' ? data.bonds : {},
-    claimedUpdateGift: !!data.claimedUpdateGift,
-    lastLoginDate: typeof data.lastLoginDate === 'string' ? data.lastLoginDate : '',
-    loginStreak: typeof data.loginStreak === 'number' ? data.loginStreak : 0,
-    loginClaimedDays: Array.isArray(data.loginClaimedDays) ? data.loginClaimedDays : [],
-  } as GameData;
-  merged.units = merged.units && typeof merged.units === 'object' ? merged.units : base.units;
-  for (const id of Object.keys(merged.units)) if (!UNIT_MAP[id]) delete merged.units[id];
-  const party = Array.isArray(merged.party) ? merged.party : base.party;
-  merged.party = [0, 1, 2, 3].map((i) => {
-    const id = party[i];
-    return id && merged.units[id] ? id : null;
-  });
-  merged.buffs = Array.isArray(merged.buffs) ? merged.buffs : [];
-  return merged;
+function setupDebugCommands(set: any, get: any) {
+  if (typeof window === 'undefined') return;
+  const dbg = {
+    help: () => {
+      console.log(`
+%c✝ 本質クリッカー デバッグコマンド一覧 ✝%c
+・ hdebug.addHonshitsu(n = 1e30)  : ✝本質✝を増やす
+・ hdebug.addCans(n = 1000)       : コーンスープ缶を増やす
+・ hdebug.addCrystals(n = 500)    : ✝本質結晶✝を増やす
+・ hdebug.addCores(n = 50)        : 構造線の核を増やす
+・ hdebug.addTickets(n = 100)     : 召喚チケットを増やす
+・ hdebug.setDev(150)             : 最高総合偏差値を設定（120以上でウルトラ転生解放）
+・ hdebug.maxAllUnits()           : 所持部員のLvと凸を最大化
+・ hdebug.unlockAllUnits()        : 全キャラクター（EX神格化部員含む）を一括解放
+・ hdebug.awakenAll()             : 全部員を第5段階まで本質覚醒
+・ hdebug.unlockAllStory()        : 全ストーリー・対抗戦をクリア
+・ hdebug.triggerGolden()         : 黄金✝を今すぐ召喚
+・ hdebug.clearSave()             : セーブデータをリセット
+`, 'color: #c084fc; font-weight: bold; font-size: 14px;', 'color: #cbd5e1; font-size: 11px;');
+    },
+    addHonshitsu: (n = 1e30) => {
+      set((s: GameData) => ({ honshitsu: s.honshitsu + n, totalEarned: s.totalEarned + n, allTimeEarned: s.allTimeEarned + n }));
+      console.log(`✝本質✝ +${fmt(n)} 注入完了！`);
+    },
+    addCans: (n = 1000) => {
+      set((s: GameData) => ({ cans: s.cans + n }));
+      console.log(`コーンスープ缶 +${n} 缶注入完了！`);
+    },
+    addCrystals: (n = 500) => {
+      set((s: GameData) => ({ crystals: s.crystals + n, totalCrystals: s.totalCrystals + n }));
+      console.log(`✝本質結晶✝ +${n} 個注入完了！`);
+    },
+    addCores: (n = 50) => {
+      set((s: GameData) => ({ cores: s.cores + n, totalCores: s.totalCores + n }));
+      console.log(`構造線の核 +${n} 個注入完了！`);
+    },
+    addTickets: (n = 100) => {
+      set((s: GameData) => ({ items: { ...s.items, ticket: (s.items.ticket || 0) + n } }));
+      console.log(`召喚チケット +${n} 枚注入完了！`);
+    },
+    setDev: (dev = 150) => {
+      set({ maxDev: dev, bestDev: Math.max(get().bestDev, dev) });
+      console.log(`最高総合偏差値を ${dev} に設定しました（120以上でウルトラ転生が可能です）`);
+    },
+    maxAllUnits: () => {
+      const units: Record<string, OwnedUnit> = {};
+      for (const u of UNITS) {
+        units[u.id] = { level: 200, star: 15, equip: (get().units[u.id] || {}).equip || null };
+      }
+      set({ units });
+      console.log('全部員を Lv200 / ★15凸 に最大化しました！');
+    },
+    unlockAllUnits: () => {
+      const units = { ...get().units };
+      for (const u of UNITS) {
+        if (!units[u.id]) units[u.id] = { level: 1, star: 0, equip: null };
+      }
+      set({ units });
+      console.log(`全部員（${UNITS.length}人）を解放しました！`);
+    },
+    awakenAll: () => {
+      const awakening: Record<string, number> = {};
+      for (const u of UNITS) awakening[u.id] = 5;
+      set({ awakening });
+      console.log('全部員を第5段階まで本質覚醒しました！');
+    },
+    unlockAllStory: () => {
+      const story: Record<string, boolean> = {};
+      for (let i = 1; i <= 30; i++) story[`ch${i}`] = true;
+      set({ story, endless: 100 });
+      console.log('ストーリー・対抗戦を全クリア状態にしました！');
+    },
+    triggerGolden: () => {
+      set({ golden: { id: Date.now(), x: 45, y: 40, until: Date.now() + 20000 } });
+      console.log('黄金✝を画面中央に出現させました！');
+    },
+    clearSave: () => {
+      localStorage.removeItem(SAVE_KEY);
+      location.reload();
+    },
+  };
+
+  (window as any).hdebug = dbg;
+  (window as any).cheat = dbg;
+  (window as any).debug = dbg;
+  dbg.help();
 }
 
 export const useGame = create<GameStore>()((set, get) => ({
@@ -219,6 +274,7 @@ export const useGame = create<GameStore>()((set, get) => ({
   init: () => {
     if (initialized) return 0;
     initialized = true;
+    setupDebugCommands(set, get);
     let offlineGain = 0;
     try {
       const raw = localStorage.getItem(SAVE_KEY);
@@ -474,23 +530,41 @@ export const useGame = create<GameStore>()((set, get) => ({
     const s = get();
     const m = computeMods(s);
     const poolDef = POOL_MAP[poolId] || POOL_MAP['standard'];
-    const isEssencePool = poolDef.currency === 'honshitsu';
 
-    // コスト計算
+    // ───── コスト計算 ─────
     let canCost = 0;
     let ticketCost = 0;
-    let hsCost = 0;
+    let coreCost = 0;
+    let crystalCost = 0;
 
-    if (isEssencePool) {
-      hsCost = count === 100 ? 8e5 : count === 10 ? 9e4 : 1e4;
-      if (s.honshitsu < hsCost) return null;
+    if (poolId === 'abyss') {
+      // ウルトラ深淵召喚：構造線の核または✝本質結晶✝
+      if (s.cores >= (count === 100 ? 90 : count === 10 ? 10 : 1)) {
+        coreCost = count === 100 ? 90 : count === 10 ? 10 : 1;
+      } else {
+        crystalCost = count === 100 ? 2500 : count === 10 ? 270 : 30;
+        if (s.crystals < crystalCost) {
+          get().toast('構造線の核または✝本質結晶✝が足りません', 'bad');
+          return null;
+        }
+      }
     } else if (useTicket) {
       ticketCost = count;
-      if ((s.items['ticket'] || 0) < ticketCost) return null;
+      if ((s.items['ticket'] || 0) < ticketCost) {
+        get().toast('召喚チケットが足りません', 'bad');
+        return null;
+      }
     } else {
       const discount = s.ultraPrestige['u_auto_mach'] ? 20 : 0;
-      canCost = count === 100 ? Math.max(300, 400 - discount) : count === 10 ? 45 : 5;
-      if (s.cans < canCost) return null;
+      if (poolId === 'artifact') {
+        canCost = count === 100 ? Math.max(200, 300 - discount) : count === 10 ? 35 : 4;
+      } else {
+        canCost = count === 100 ? Math.max(300, 400 - discount) : count === 10 ? 45 : 5;
+      }
+      if (s.cans < canCost) {
+        get().toast('コーンスープ缶が足りません', 'bad');
+        return null;
+      }
     }
 
     const rates = gachaRates(m);
@@ -499,16 +573,118 @@ export const useGame = create<GameStore>()((set, get) => ({
     let pity = s.pity;
     const units: Record<string, OwnedUnit> = { ...s.units };
     const party = [...s.party];
+    const items = { ...s.items };
     let refundTotal = 0;
     let crystalsTotal = 0;
     const rolled: number[] = [];
     const results: PullResult[] = [];
 
+    // ───── 神器・秘宝装備ガチャの場合 ─────
+    if (poolId === 'artifact') {
+      for (let i = 0; i < count; i++) {
+        pity++;
+        let r = rollWeighted(rates);
+        if (count >= 10 && (i + 1) % 10 === 0) {
+          const recent = rolled.slice(i - 9, i);
+          const bestRecent = Math.max(rarityRank(r), ...(recent.length ? recent : [0]));
+          if (bestRecent < rarityRank('SR')) r = 'SR';
+        }
+        if (count === 100 && i === 99) {
+          const bestAll = Math.max(rarityRank(r), ...rolled);
+          if (bestAll < rarityRank('SSR')) r = 'SSR';
+        }
+        if (pity >= pmax && rarityRank(r) < rarityRank('UR')) r = 'UR';
+        if (rarityRank(r) >= rarityRank('UR')) pity = 0;
+        rolled.push(rarityRank(r));
+
+        // 該当レアリティの装備を取得（なければ全装備から）
+        const pool = EQUIPS.filter((e) => e.rarity === r);
+        const eq = pool.length ? pool[Math.floor(Math.random() * pool.length)] : EQUIPS[Math.floor(Math.random() * EQUIPS.length)];
+        items[eq.id] = (items[eq.id] || 0) + 1;
+        results.push({
+          id: eq.id,
+          isNew: false,
+          star: 0,
+          refund: 0,
+          crystals: 0,
+          kind: 'equip',
+          equipId: eq.id,
+        });
+      }
+
+      set({
+        items: useTicket ? { ...items, ticket: items.ticket - ticketCost } : items,
+        pity,
+        pulls: s.pulls + count,
+        cans: s.cans - canCost,
+        xp: s.xp + 3 * count * (1 + m.xpPct),
+      });
+
+      let bestEquip = results[0];
+      for (const r of results) {
+        const itemA = ITEM_MAP[r.id];
+        const itemB = ITEM_MAP[bestEquip.id];
+        if (itemA && itemB && rarityRank(itemA.rarity) > rarityRank(itemB.rarity)) bestEquip = r;
+      }
+      const bItem = ITEM_MAP[bestEquip.id];
+      if (bItem && rarityRank(bItem.rarity) >= rarityRank('SSR')) {
+        get().pushLines([['sys', `✝ 特級神器【${bItem.name}】が降臨した！`], ['kuraishi', '聖典に記録します']]);
+      }
+
+      get().processLevel();
+      return results;
+    }
+
+    // ───── 構造線の深淵召喚（ウルトラ超越ガチャ）の場合 ─────
+    if (poolId === 'abyss') {
+      const abyssUnits = UNITS.filter((u) => u.id.startsWith('ex_') || u.rarity === 'LR' || u.rarity === 'UR');
+      for (let i = 0; i < count; i++) {
+        // EX部員を高確率選出
+        const def = abyssUnits[Math.floor(Math.random() * abyssUnits.length)];
+        const cur = units[def.id];
+        if (!cur) {
+          units[def.id] = { level: 1, star: 0, equip: null };
+          const e = party.indexOf(null);
+          if (e >= 0) party[e] = def.id;
+          results.push({ id: def.id, isNew: true, star: 0, refund: 0, crystals: 0, kind: 'unit' });
+        } else if (cur.star < maxStar) {
+          units[def.id] = { ...cur, star: cur.star + 1 };
+          results.push({ id: def.id, isNew: false, star: cur.star + 1, refund: 0, crystals: 0, kind: 'unit' });
+        } else {
+          const rf = RARITY_REFUND[def.rarity];
+          const cry = Math.floor(RARITY_CRYSTALS[def.rarity] * 2);
+          refundTotal += rf;
+          crystalsTotal += cry;
+          results.push({ id: def.id, isNew: false, star: cur.star, refund: rf, crystals: cry, kind: 'unit' });
+        }
+      }
+
+      set({
+        units,
+        party,
+        pulls: s.pulls + count,
+        cans: s.cans + refundTotal,
+        cores: s.cores - coreCost,
+        crystals: s.crystals - crystalCost + crystalsTotal,
+        totalCrystals: s.totalCrystals + crystalsTotal,
+        xp: s.xp + 10 * count * (1 + m.xpPct),
+      });
+
+      get().pushLines([
+        ['sys', `🌌 構造線の深淵から神格化EX部員が呼び出された……！`],
+        ['ryoma', 'これまじ深淵の✝本質✝'],
+        ['rei', '面白いな。常識が通用しない'],
+      ]);
+
+      get().processLevel();
+      return results;
+    }
+
+    // ───── 通常自販機（部員召喚） ─────
     for (let i = 0; i < count; i++) {
       pity++;
       let r = rollWeighted(rates);
 
-      // 10連保証（10の倍数の最後）
       if (count >= 10 && (i + 1) % 10 === 0) {
         const recentChunk = rolled.slice(i - 9, i);
         const bestInChunk = Math.max(rarityRank(r), ...(recentChunk.length ? recentChunk : [0]));
@@ -516,60 +692,39 @@ export const useGame = create<GameStore>()((set, get) => ({
         else if (bestInChunk < rarityRank('SR')) r = 'SR';
       }
 
-      // 100連ボーナス（100連目）
       if (count === 100 && i === 99) {
         const bestAll = Math.max(rarityRank(r), ...rolled);
         if (bestAll < rarityRank('SSR')) r = 'SSR';
       }
 
-      // 天井
       if (pity >= pmax && rarityRank(r) < rarityRank('UR')) r = 'UR';
       if (rarityRank(r) >= rarityRank('UR')) pity = 0;
       rolled.push(rarityRank(r));
 
-      // プール別キャラ選出（ピックアップ重みづけ）
-      const pool = UNITS.filter((u) => u.rarity === r);
-      let def = pool[0];
-      if (pool.length > 0) {
-        if (poolDef.featuredIds && poolDef.featuredIds.length > 0) {
-          const weights: Record<string, number> = {};
-          for (const u of pool) {
-            weights[u.id] = poolDef.featuredIds.includes(u.id) ? 3 : 1;
-          }
-          const chosenId = rollWeighted(weights);
-          def = UNIT_MAP[chosenId] || pool[0];
-        } else {
-          def = pool[Math.floor(Math.random() * pool.length)];
-        }
-      }
+      // EX部員は深淵限定のため除外
+      const pool = UNITS.filter((u) => u.rarity === r && !u.id.startsWith('ex_'));
+      const def = pool.length ? pool[Math.floor(Math.random() * pool.length)] : UNITS[0];
 
       const cur = units[def.id];
       if (!cur) {
         units[def.id] = { level: 1, star: 0, equip: null };
         const e = party.indexOf(null);
         if (e >= 0) party[e] = def.id;
-        results.push({ id: def.id, isNew: true, star: 0, refund: 0, crystals: 0 });
+        results.push({ id: def.id, isNew: true, star: 0, refund: 0, crystals: 0, kind: 'unit' });
       } else if (cur.star < maxStar) {
         units[def.id] = { ...cur, star: cur.star + 1 };
-        results.push({ id: def.id, isNew: false, star: cur.star + 1, refund: 0, crystals: 0 });
+        results.push({ id: def.id, isNew: false, star: cur.star + 1, refund: 0, crystals: 0, kind: 'unit' });
       } else {
-        // 完凸済み！缶＋✝本質結晶✝に還元
         const rf = RARITY_REFUND[def.rarity];
         const cry = Math.floor(RARITY_CRYSTALS[def.rarity] * (1 + (m.crystalBonus || 0)));
         refundTotal += rf;
         crystalsTotal += cry;
-        results.push({ id: def.id, isNew: false, star: cur.star, refund: rf, crystals: cry });
+        results.push({ id: def.id, isNew: false, star: cur.star, refund: rf, crystals: cry, kind: 'unit' });
       }
     }
 
-    const newCans = isEssencePool
-      ? s.cans + refundTotal
-      : useTicket
-        ? s.cans + refundTotal
-        : s.cans - canCost + refundTotal;
-
-    const newHonshitsu = isEssencePool ? s.honshitsu - hsCost : s.honshitsu;
-    const items = useTicket ? { ...s.items, ticket: (s.items['ticket'] || 0) - ticketCost } : s.items;
+    const newCans = useTicket ? s.cans + refundTotal : s.cans - canCost + refundTotal;
+    const finalItems = useTicket ? { ...items, ticket: items.ticket - ticketCost } : items;
 
     set({
       units,
@@ -577,8 +732,7 @@ export const useGame = create<GameStore>()((set, get) => ({
       pity,
       pulls: s.pulls + count,
       cans: newCans,
-      honshitsu: newHonshitsu,
-      items,
+      items: finalItems,
       crystals: s.crystals + crystalsTotal,
       totalCrystals: s.totalCrystals + crystalsTotal,
       hadZeroCans: s.hadZeroCans || newCans <= 0,

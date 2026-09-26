@@ -306,6 +306,42 @@ export const UNITS: UnitDef[] = [
     passive: { desc: '戦闘中の復活+2・地面の記憶獲得+100%・部員生産×3', scope: 'owned', mods: { revive: 2, memoryPct: 1.0, unitProdPct: 3.0 } },
     quote: '地面は忘れない。', desc: '地図は人間が作る。地面には限界がない。',
   },
+  // ───────── EX（深淵召喚限定・神格化部員） ─────────
+  {
+    id: 'ex_ryoma', name: '✝神託者✝ 両馬二郎', title: '天啓を降ろす始祖', rarity: 'LR', type: '本質', emoji: '✝', speaker: 'ryoma', portrait: PORTRAITS.ryoma,
+    atk: 180, hp: 1600, spd: 1.1, prod: 800000,
+    skill: { name: '超・これまじ✝本質✝', kind: 'aoe', power: 5.5, charge: 110, line: '全宇宙がまじ✝本質✝', desc: '敵全体にATK×550%' },
+    passive: { desc: '全生産×5・クリック力×5・本質タイプATK+100%', scope: 'owned', mods: { prodX: 5, clickX: 5, typeAtk: { 本質: 1.0 } } },
+    quote: '天啓は降ろすものじゃない。俺自身が天啓だ。', desc: '構造線の深淵から神格化して帰還した両馬。二郎系を宇宙規模で食べる。',
+  },
+  {
+    id: 'ex_rei', name: '絶対領域の首席・数理零', title: '偏差値1000の超越者', rarity: 'LR', type: '面白', emoji: '📐', speaker: 'rei', portrait: PORTRAITS.rei,
+    atk: 220, hp: 1800, spd: 1.3, prod: 1200000,
+    skill: { name: '絶対の「面白い」', kind: 'buff', power: 2.0, duration: 15, charge: 100, line: '世界は本当に面白いな', desc: '味方全体のATK+200%（15秒）' },
+    passive: { desc: '全ステータス×3・毎秒本質×3・部員生産×5', scope: 'owned', mods: { statX: 3, prodX: 3, unitProdPct: 5.0 } },
+    quote: '家が近いから。それ以上の真理はないよ。', desc: '内進も理数科も次元の壁も全て解き明かした怪童。',
+  },
+  {
+    id: 'ex_heikatsu', name: '地殻統率者・塀勝也', title: '地球の記憶そのもの', rarity: 'LR', type: '地理', emoji: '🗺️', speaker: 'heikatsu', portrait: PORTRAITS.heikatsu,
+    atk: 200, hp: 2500, spd: 1.0, prod: 900000,
+    skill: { name: '構造線大破断', kind: 'stun', power: 6.0, duration: 8, charge: 120, line: '地球が、お前らを覚えている！', desc: '敵全体ATK×600%＋8秒スタン' },
+    passive: { desc: '地理タイプATK+200%・味方被ダメ-20%・戦闘復活+3', scope: 'owned', mods: { typeAtk: { 地理: 2.0 }, dmgReduce: 0.2, revive: 3 } },
+    quote: '地球が何億年かけて作った地面の上で、お前らは生きている。', desc: '三年間見せた地図が、全惑星規模の地殻へ拡大した。',
+  },
+  {
+    id: 'ex_terachi', name: '星と地面の主・寺地星', title: '全宇宙配信者', rarity: 'LR', type: '面白', emoji: '🔭', speaker: 'terachi', portrait: PORTRAITS.terachi,
+    atk: 160, hp: 2000, spd: 1.0, prod: 1000000,
+    skill: { name: '三十秒の宇宙フリーズ', kind: 'heal', power: 1.0, charge: 100, line: '……（全銀河が固まった）', desc: '味方全体HP100%全快＋バリア50%' },
+    passive: { desc: '全生産×4・黄金✝出現率+50%・部員生産×4', scope: 'owned', mods: { prodX: 4, goldenRate: 0.5, unitProdPct: 4.0 } },
+    quote: '銀河くらいの存在になりました。紙に書いて読みます。', desc: '登録者数が百億人を突破。沈黙の長さも新記録を更新。',
+  },
+  {
+    id: 'ex_mie', name: '完全否定神・三重県臣', title: '冷笑の絶対領域', rarity: 'LR', type: '冷笑', emoji: '😑', speaker: 'mie', portrait: PORTRAITS.mie,
+    atk: 170, hp: 3000, spd: 1.0, prod: 850000,
+    skill: { name: '「は？」の神域', kind: 'stun', power: 3.5, duration: 6, charge: 110, line: '……は？（宇宙が静止する）', desc: '敵全体ATK×350%＋6秒スタン' },
+    passive: { desc: '味方被ダメ-25%・全冷笑タイプATK+150%', scope: 'owned', mods: { dmgReduce: 0.25, typeAtk: { 冷笑: 1.5 } } },
+    quote: '神とか言うな。俺はただの三重県臣だ。', desc: 'すべてのナンセンスを拒絶し切った結果、宇宙の安定を守る神となった。',
+  },
 ];
 
 export const UNIT_MAP: Record<string, UnitDef> = Object.fromEntries(UNITS.map((u) => [u.id, u]));

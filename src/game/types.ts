@@ -231,7 +231,7 @@ export interface AwakeningStage {
   flavor: string;
 }
 
-export type GachaPoolId = 'standard' | 'pickup_b' | 'pickup_inner' | 'essence';
+export type GachaPoolId = 'standard' | 'artifact' | 'abyss';
 
 export interface GachaPoolDef {
   id: GachaPoolId;
@@ -239,7 +239,7 @@ export interface GachaPoolDef {
   subtitle: string;
   desc: string;
   emoji: string;
-  currency: 'can' | 'honshitsu';
+  currency: 'can' | 'crystal' | 'core';
   featuredIds: string[];
   bannerGradient: string;
 }
@@ -356,4 +356,6 @@ export interface PullResult {
   star: number;
   refund: number;
   crystals: number;
+  kind?: 'unit' | 'equip';
+  equipId?: string;
 }

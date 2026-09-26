@@ -273,10 +273,10 @@ export function rebirthGain(s: GameData, m: Mods) {
   return Math.floor(Math.pow((s.maxDev - 55) / 5, 2) * (1 + m.memoryPct));
 }
 
-// 🌌 ウルトラ転生（超越）で獲得する構造線の核
+// 🌌 ウルトラ転生（超越）で獲得する構造線の核（総合偏差値120で解放）
 export function ultraRebirthGain(s: GameData, m: Mods) {
-  if (s.maxDev < 85) return 0;
-  return Math.floor(Math.pow((s.maxDev - 80) / 4, 2.2) * (1 + (m.corePct || 0)));
+  if (s.maxDev < 120) return 0;
+  return Math.floor(Math.pow((s.maxDev - 115) / 4, 2.2) * (1 + (m.corePct || 0)));
 }
 
 export const unitLevelCost = (def: UnitDef, lv: number) => RARITY_COST[def.rarity] * Math.pow(1.15, lv - 1);

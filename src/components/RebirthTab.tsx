@@ -21,7 +21,7 @@ export default function RebirthTab() {
   const gainUltra = ultraRebirthGain(s, m);
   const [confirmUltra, setConfirmUltra] = useState(false);
   const [animUltra, setAnimUltra] = useState<{ gain: number; n: number } | null>(null);
-  const canUltra = s.maxDev >= 85;
+  const canUltra = s.maxDev >= 120;
 
   return (
     <div className="space-y-4">
@@ -158,7 +158,7 @@ export default function RebirthTab() {
                   を獲得し、常識を遥かに超越したウルトラ転生ツリーを永続強化できます。
                 </div>
                 <p className="text-xs text-slate-400">
-                  解放条件：総合偏差値<b className="text-white">85以上</b>（数理零の偏差値領域「家が近いから」到達）。
+                  解放条件：総合偏差値<b className="text-white">120以上</b>（「地形図の向こう側を見る男」到達）。
                 </p>
                 <p className="text-xs italic text-purple-300">
                   ——糸魚川-静岡構造線が破断する。東も西も超えて、全ては原初へ。（ヘイカツ）
@@ -177,7 +177,7 @@ export default function RebirthTab() {
                 >
                   🌌 ウルトラ転生
                 </Btn>
-                {!canUltra && <div className="mt-1 text-[10px] text-rose-300">総合偏差値85で解放</div>}
+                {!canUltra && <div className="mt-1 text-[10px] text-rose-300">総合偏差値120で解放</div>}
               </div>
             </div>
           </Panel>
