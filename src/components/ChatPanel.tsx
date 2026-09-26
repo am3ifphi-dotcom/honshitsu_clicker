@@ -11,10 +11,11 @@ function Msg({ m }: { m: ChatMsg }) {
   }
   const mine = m.s === 'you';
   const unit = sp.unit ? UNIT_MAP[sp.unit] : undefined;
+  const portrait = unit?.portrait ?? SPEAKER_PORTRAITS[m.s];
   return (
     <div className={`anim-fadein flex items-start gap-1.5 ${mine ? 'flex-row-reverse' : ''}`}>
-      {unit?.portrait ? (
-        <img src={unit.portrait} alt={sp.name} className="h-8 w-8 shrink-0 rounded-full border border-white/20 object-cover" />
+      {portrait ? (
+        <img src={portrait} alt={sp.name} className="h-8 w-8 shrink-0 rounded-full border border-white/20 object-cover" />
       ) : (
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm">{sp.emoji}</div>
       )}

@@ -18,7 +18,7 @@ export default function Dialogue({ title, lines, onDone, doneLabel = '次へ' }:
 
   return (
     <div className="relative flex min-h-[480px] flex-col overflow-hidden rounded-2xl border border-white/10">
-      <img src={bg} alt="" className="absolute inset-0 h-full w-full object-cover opacity-45" draggable={false} />
+      <img src={bgImg ?? defaultBg} alt="" className="absolute inset-0 h-full w-full object-cover opacity-45" draggable={false} />
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/20 to-black/80" />
       <div className="relative flex items-center justify-between gap-2 p-3">
         <div className="min-w-0 truncate font-display text-sm text-purple-100 sm:text-base">{title}</div>

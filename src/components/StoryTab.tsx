@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../game/store';
 import { derive, judge } from '../game/formulas';
-import { CHAPTERS } from '../game/data/story';
+import { CHAPTERS, CHAPTER_BG } from '../game/data/story';
 import { UNIT_MAP } from '../game/data/units';
 import { ITEM_MAP } from '../game/data/items';
 import type { Chapter, RewardSummary } from '../game/types';

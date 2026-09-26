@@ -1,4 +1,6 @@
 import type { Line } from '../types';
+import principalImg from '../../assets/img/principal.jpg';
+import nouchiImg from '../../assets/img/nouchi.jpg';
 
 export interface Speaker {
   name: string;
@@ -28,6 +30,11 @@ export const SPEAKERS: Record<string, Speaker> = {
   feikatsu: { name: 'フェイカツ', emoji: '🎭', color: '#a78bfa', unit: 'feikatsu' },
   principal: { name: '校長', emoji: '👴', color: '#cbd5e1' },
   nouchi: { name: '内進生', emoji: '👔', color: '#818cf8' },
+};
+
+export const SPEAKER_PORTRAITS: Record<string, string> = {
+  principal: principalImg,
+  nouchi: nouchiImg,
 };
 
 export const THREADS: Line[][] = [

@@ -1,5 +1,17 @@
 import type { Chapter } from '../types';
 
+import bgClassroom from '../../assets/img/bg-classroom.jpg';
+import bgNanto from '../../assets/img/bg-nanto.jpg';
+import bgVending from '../../assets/img/bg-vending.jpg';
+import bgStream from '../../assets/img/bg-stream.jpg';
+import bgHawaii from '../../assets/img/bg-hawaii.jpg';
+import bgSuiko from '../../assets/img/bg-suiko.jpg';
+import bgArena from '../../assets/img/bg-arena.jpg';
+import bgShokudo from '../../assets/img/bg-shokudo.jpg';
+import bgLibrary from '../../assets/img/bg-library.jpg';
+import bgTrain from '../../assets/img/bg-train.jpg';
+import bgSakura from '../../assets/img/bg-sakura.jpg';
+
 export const CHAPTERS: Chapter[] = [
   // ════════════ 1年生編 ════════════
   {
@@ -789,3 +801,35 @@ export const CHAPTERS: Chapter[] = [
 ];
 
 export const CHAPTER_MAP: Record<string, Chapter> = Object.fromEntries(CHAPTERS.map((c) => [c.id, c]));
+
+export const CHAPTER_BG: Record<string, string> = {
+  'y1-0': bgClassroom,
+  'y1-1': bgClassroom,
+  'y1-2': bgClassroom,
+  'y1-3': bgStream,
+  'y1-4': bgClassroom,
+  'y1-5': bgTrain,
+  'y1-6': bgClassroom,
+  'y1-7': bgClassroom,
+  'y1-8': bgStream,
+  'y1-9': bgClassroom,
+  'y1-10': bgVending,
+  'y1-11': bgClassroom,
+  'y1-12': bgSakura,
+  'y2-1': bgClassroom,
+  'y2-2': bgClassroom,
+  'y2-3': bgStream,
+  'y2-4': bgClassroom,
+  'y2-5': bgNanto,
+  'y2-6': bgShokudo,
+  'y2-7': bgHawaii,
+  'y2-8': bgClassroom,
+  'y2-9': bgClassroom,
+  'y2-10': bgStream,
+  'y3-0': bgClassroom,
+  'y3-1': bgClassroom,
+  'y3-2': bgStream,
+  'y3-3': bgSuiko,
+  'y3-4': bgArena,
+  'y3-5': bgStream,
+};
