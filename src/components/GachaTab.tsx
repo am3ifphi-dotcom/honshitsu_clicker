@@ -4,6 +4,7 @@ import { computeMods, gachaRates, pityMax, rarityRank, RARITIES } from '../game/
 import { UNITS, UNIT_MAP } from '../game/data/units';
 import type { PullResult } from '../game/types';
 import { Btn, Modal, Panel, RarityBadge, UnitIcon, RARITY_STYLE, TypeBadge } from './ui';
+import RevealCutscene from './RevealCutscene';
 import { pct } from '../game/format';
 
 const FEATURED = ['rei', 'heikatsu', 'feikatsu', 'pregen', 'ryoma', 'mie', 'terachi', 'sato'];
@@ -15,6 +16,7 @@ export default function GachaTab() {
   const rates = gachaRates(m);
   const pmax = pityMax(m);
   const [results, setResults] = useState<PullResult[] | null>(null);
+  const [reveal, setReveal] = useState<PullResult[] | null>(null);
   const [anim, setAnim] = useState(false);
   const [showPool, setShowPool] = useState(false);
   const tickets = s.items['ticket'] || 0;
@@ -26,8 +28,15 @@ export default function GachaTab() {
       return;
     }
     setResults(r);
-    setAnim(true);
-    setTimeout(() => setAnim(false), 1000);
+    // 強キャラ（SSR以上）が出たら全画面の正方形レベール演出へ
+    const strong = r.filter((x) => rarityRank(UNIT_MAP[x.id].rarity) >= rarityRank('SSR'));
+    if (strong.length) {
+      setReveal(strong);
+      setAnim(false);
+    } else {
+      setAnim(true);
+      setTimeout(() => setAnim(false), 1000);
+    }
   };
 
   const bestRank = results ? Math.max(...results.map((r) => rarityRank(UNIT_MAP[r.id].rarity))) : 0;
@@ -130,7 +139,7 @@ export default function GachaTab() {
         </Panel>
       </div>
 
-      <Modal open={!!results} onClose={anim ? undefined : () => setResults(null)} wide title={anim ? undefined : '召喚結果'}>
+      <Modal open={!!results && !reveal} onClose={anim ? undefined : () => setResults(null)} wide title={anim ? undefined : '召喚結果'}>
         {results && anim ? (
           <div className={`flex h-72 flex-col items-center justify-center rounded-xl ${bestRank >= 4 ? 'bg-rainbow' : bestRank === 3 ? 'bg-gradient-to-b from-amber-400 to-orange-700' : 'bg-gradient-to-b from-slate-600 to-slate-900'}`}>
             <div className="anim-gacon font-display text-5xl text-white drop-shadow-lg">ガコン！</div>
@@ -188,6 +197,8 @@ export default function GachaTab() {
           </div>
         ))}
       </Modal>
+
+      <RevealCutscene items={reveal} onDone={() => setReveal(null)} />
     </div>
   );
 }

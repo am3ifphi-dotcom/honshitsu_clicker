@@ -191,3 +191,179 @@ button:disabled {
   100% { transform: translateX(120vw); }
 }
 .anim-truck { animation: truck 2.2s cubic-bezier(0.6, 0, 0.4, 1) forwards; }
+
+/* ───────── 強キャラ排出演出（RevealCutscene） ───────── */
+@keyframes rcFlash {
+  0% { opacity: 0.95; }
+  28% { opacity: 0.3; }
+  100% { opacity: 0; }
+}
+.rc-flash { animation: rcFlash 0.75s ease-out forwards; }
+
+@keyframes rcRing {
+  0% { transform: translate(-50%, -50%) scale(0.08); opacity: 0.95; border-width: 12px; }
+  100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; border-width: 1px; }
+}
+.rc-ring { animation: rcRing 1.15s cubic-bezier(0.16, 0.84, 0.44, 1) forwards; }
+
+@keyframes rcShakeHard {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  12% { transform: translate(-14px, 6px) rotate(-1.1deg); }
+  25% { transform: translate(12px, -8px) rotate(0.9deg); }
+  38% { transform: translate(-10px, -4px) rotate(-0.7deg); }
+  52% { transform: translate(8px, 6px) rotate(0.5deg); }
+  66% { transform: translate(-6px, 2px) rotate(-0.35deg); }
+  80% { transform: translate(3px, -2px) rotate(0.2deg); }
+}
+.rc-shake { animation: rcShakeHard 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+@keyframes rcRaysSpin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.rc-rays { animation: rcRaysSpin 46s linear infinite; }
+
+@keyframes rcHaloSpin { to { transform: rotate(-360deg); } }
+.rc-halo { animation: rcHaloSpin 16s linear infinite; }
+
+@keyframes rcSlamIn {
+  0% { transform: scale(1.85); opacity: 0; filter: brightness(2.6) blur(6px); }
+  55% { opacity: 1; filter: brightness(1.35) blur(0); }
+  72% { transform: scale(0.955); }
+  100% { transform: scale(1); opacity: 1; filter: brightness(1) blur(0); }
+}
+.rc-slam { animation: rcSlamIn 0.62s cubic-bezier(0.22, 1.15, 0.36, 1) both; }
+
+@keyframes rcKenBurns { 0% { transform: scale(1.16); } 100% { transform: scale(1); } }
+.rc-kenburns { animation: rcKenBurns 10s ease-out both; }
+
+@keyframes rcShine {
+  0% { transform: translateX(-170%) skewX(-18deg); }
+  100% { transform: translateX(280%) skewX(-18deg); }
+}
+.rc-shine { animation: rcShine 3.4s ease-in-out infinite; }
+
+@keyframes rcFloatUp {
+  0% { transform: translateY(14vh) scale(0.7) rotate(-8deg); opacity: 0; }
+  12% { opacity: 0.95; }
+  85% { opacity: 0.95; }
+  100% { transform: translateY(-112vh) scale(1.15) rotate(10deg); opacity: 0; }
+}
+.rc-glyph { animation: rcFloatUp linear infinite; }
+
+@keyframes rcConfetti {
+  0% { transform: translateY(-12vh) rotate(0deg); opacity: 0; }
+  8% { opacity: 1; }
+  100% { transform: translateY(114vh) rotate(760deg); opacity: 0.85; }
+}
+.rc-confetti { animation: rcConfetti linear infinite; }
+
+@keyframes rcPopIn {
+  0% { transform: scale(0.35); opacity: 0; }
+  68% { transform: scale(1.09); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.rc-pop { animation: rcPopIn 0.48s cubic-bezier(0.22, 1.2, 0.36, 1) both; }
+
+@keyframes rcSlideUp {
+  0% { transform: translateY(30px); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+.rc-slide { animation: rcSlideUp 0.52s ease-out both; }
+
+@keyframes rcBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.rc-cursor { animation: rcBlink 0.7s steps(1) infinite; }
+
+@keyframes rcGlitchA {
+  0%, 84%, 100% { clip-path: inset(0 0 0 0); transform: translate(0, 0); opacity: 0; }
+  85% { clip-path: inset(8% 0 68% 0); transform: translate(-10px, -2px); opacity: 0.85; }
+  87% { clip-path: inset(0 0 0 0); transform: translate(0, 0); opacity: 0; }
+  91% { clip-path: inset(58% 0 18% 0); transform: translate(12px, 2px); opacity: 0.85; }
+  93% { opacity: 0; }
+}
+.rc-glitch-a { animation: rcGlitchA 2.4s steps(2) infinite; }
+
+@keyframes rcGlitchB {
+  0%, 40%, 100% { clip-path: inset(0 0 0 0); transform: translate(0, 0); opacity: 0; }
+  41% { clip-path: inset(34% 0 42% 0); transform: translate(14px, 0); opacity: 0.8; }
+  44% { opacity: 0; }
+  62% { clip-path: inset(70% 0 6% 0); transform: translate(-12px, 0); opacity: 0.8; }
+  65% { opacity: 0; }
+}
+.rc-glitch-b { animation: rcGlitchB 3.1s steps(2) infinite; }
+
+@keyframes rcInvert {
+  0%, 90%, 100% { opacity: 0; }
+  92% { opacity: 0.5; }
+  94% { opacity: 0; }
+  96% { opacity: 0.32; }
+  98% { opacity: 0; }
+}
+.rc-invert { animation: rcInvert 2.7s steps(2) infinite; }
+
+@keyframes rcScan { from { transform: translateY(-110%); } to { transform: translateY(110%); } }
+.rc-scan { animation: rcScan 3.6s linear infinite; }
+
+@keyframes rcGlowPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.rc-glowpulse { animation: rcGlowPulse 1.9s ease-in-out infinite; }
+
+@keyframes rcNewSpin { to { transform: rotate(360deg); } }
+.rc-newspin { animation: rcNewSpin 14s linear infinite; }
+
+@keyframes rcNewPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+.rc-newpulse { animation: rcNewPulse 1.15s ease-in-out infinite; }
+
+@keyframes rcContourDrift {
+  0% { transform: scale(1.02) translate(0, 0); }
+  50% { transform: scale(1.14) translate(-2.5%, 1.5%); }
+  100% { transform: scale(1.02) translate(0, 0); }
+}
+.rc-contour { animation: rcContourDrift 20s ease-in-out infinite; }
+
+@keyframes rcSigil {
+  0% { transform: scale(4.2); opacity: 0; filter: blur(14px); }
+  45% { opacity: 1; filter: blur(0); }
+  62% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+.rc-sigil { animation: rcSigil 0.72s cubic-bezier(0.22, 1.1, 0.36, 1) both; }
+
+@keyframes rcRaritySlam {
+  0% { transform: scale(3.4) rotate(-4deg); opacity: 0; letter-spacing: 0.55em; filter: blur(10px); }
+  50% { opacity: 1; filter: blur(0); }
+  72% { transform: scale(0.92) rotate(0.6deg); letter-spacing: 0.03em; }
+  100% { transform: scale(1) rotate(0); letter-spacing: 0.12em; opacity: 1; filter: blur(0); }
+}
+.rc-rarity { animation: rcRaritySlam 0.7s cubic-bezier(0.22, 1.1, 0.36, 1) both; }
+
+@keyframes rcFadeOutUp {
+  to { opacity: 0; transform: translateY(-22px) scale(1.08); }
+}
+.rc-fadeout { animation: rcFadeOutUp 0.42s ease-in forwards; }
+
+@keyframes rcFlicker {
+  0%, 100% { opacity: 1; }
+  7% { opacity: 0.15; }
+  9% { opacity: 1; }
+  38% { opacity: 1; }
+  40% { opacity: 0.35; }
+  42% { opacity: 1; }
+  71% { opacity: 1; }
+  72% { opacity: 0.05; }
+  74% { opacity: 1; }
+}
+.rc-flicker { animation: rcFlicker 2.2s steps(2) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-flash, .rc-ring, .rc-shake, .rc-rays, .rc-halo, .rc-slam, .rc-kenburns,
+  .rc-shine, .rc-glyph, .rc-confetti, .rc-pop, .rc-slide, .rc-cursor,
+  .rc-glitch-a, .rc-glitch-b, .rc-invert, .rc-scan, .rc-glowpulse,
+  .rc-newspin, .rc-newpulse, .rc-contour, .rc-sigil, .rc-rarity,
+  .rc-fadeout, .rc-flicker {
+    animation-duration: 0.01s !important;
+    animation-iteration-count: 1 !important;
+  }
+}
