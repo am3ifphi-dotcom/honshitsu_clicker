@@ -234,6 +234,7 @@ function setupDebugCommands(set: any, get: any) {
 ・ hdebug.addCrystals(n = 500)    : ✝本質結晶✝を増やす
 ・ hdebug.addCores(n = 50)        : 構造線の核を増やす
 ・ hdebug.addTickets(n = 100)     : 召喚チケットを増やす
+・ hdebug.addMemories(n = 100)    : 地面の記憶を増やす
 ・ hdebug.setDev(150)             : 最高総合偏差値を設定（120以上でウルトラ転生解放）
 ・ hdebug.maxAllUnits()           : 所持部員のLvと凸を最大化
 ・ hdebug.unlockAllUnits()        : 全キャラクター（EX神格化部員含む）を一括解放
@@ -262,6 +263,10 @@ function setupDebugCommands(set: any, get: any) {
     addTickets: (n = 100) => {
       set((s: GameData) => ({ items: { ...s.items, ticket: (s.items.ticket || 0) + n } }));
       console.log(`召喚チケット +${n} 枚注入完了！`);
+    },
+    addMemories: (n = 100) => {
+      set((s: GameData) => ({ memories: s.memories + n, totalMemories: s.totalMemories + n }));
+      console.log(`🌏 地面の記憶 +${fmt(n)} 注入完了！`);
     },
     setDev: (dev = 150) => {
       set({ maxDev: dev, bestDev: Math.max(get().bestDev, dev) });
