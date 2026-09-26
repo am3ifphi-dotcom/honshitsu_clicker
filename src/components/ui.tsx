@@ -69,6 +69,14 @@ export function Bar({ value, color = 'bg-emerald-500', h = 6, className = '' }: 
 }
 
 export function Stars({ n, max = 5 }: { n: number; max?: number }) {
+  if (n > 5) {
+    return (
+      <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/20 px-1 py-0.2 text-[10px] font-bold text-amber-300">
+        <span>★</span>
+        <span>{n}</span>
+      </span>
+    );
+  }
   return (
     <span className="text-[11px] leading-none tracking-tighter">
       {Array.from({ length: max }, (_, i) => (

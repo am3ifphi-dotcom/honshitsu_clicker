@@ -5,6 +5,7 @@ import { FACILITIES } from '../game/data/facilities';
 import { TICKER } from '../game/data/chatter';
 import { fmt, pct } from '../game/format';
 import { Panel, Chip } from './ui';
+import { sfx } from '../utils/sfx';
 
 interface Floater {
   id: number;
@@ -59,8 +60,10 @@ export default function ClickerTab() {
     const x = clientX - rect.left;
     const y = clientY - rect.top;
     const r = useGame.getState().click();
+    if (r.crit) sfx.crit();
+    else sfx.tap();
     const id = ++fid;
-    const word = r.crit ? 'まじ✝本質✝！' : Math.random() < 0.12 ? WORDS[Math.floor(Math.random() * WORDS.length)] : '';
+    const word = r.crit ? 'まじ✝本質✝！' : Math.random() < 0.15 ? WORDS[Math.floor(Math.random() * WORDS.length)] : '';
     setFloats((f) => [...f.slice(-24), { id, x, y, text: '+' + fmt(r.amount), crit: r.crit, word }]);
     setRipples((rr) => [...rr.slice(-6), { id, x, y }]);
     setPressKey((k) => k + 1);

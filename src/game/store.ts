@@ -1,16 +1,18 @@
 import { create } from 'zustand';
-import type { Buff, GameData, Line, OwnedUnit, PrestigeDef, PullResult, Rarity, Reward, RewardSummary, Toast } from './types';
+import type { Buff, GameData, GachaPoolId, Line, OwnedUnit, PrestigeDef, PullResult, Rarity, Reward, RewardSummary, Toast, UltraPrestigeDef } from './types';
 import {
   derive, computeMods, xpToNext, spTotal, spSpent, levelCap, unitLevelCost, bulkCost, maxAffordable,
-  gachaRates, pityMax, rollWeighted, rebirthGain, devToPower, rarityRank, RARITY_REFUND, RARITIES, unitStats,
+  gachaRates, pityMax, rollWeighted, rebirthGain, ultraRebirthGain, devToPower, rarityRank, RARITY_REFUND, RARITY_CRYSTALS, RARITIES, unitStats, getMaxStar,
 } from './formulas';
 import { UNITS, UNIT_MAP } from './data/units';
 import { ITEM_MAP, EQUIPS, DROP_CONSUMABLES, SHOP, EQUIP_WEIGHTS, LOSTBOX_WEIGHTS } from './data/items';
 import type { ShopEntry } from './data/items';
 import { FAC_MAP } from './data/facilities';
-import { NODE_MAP, PRESTIGE_MAP } from './data/skills';
+import { NODE_MAP, PRESTIGE_MAP, ULTRA_PRESTIGE_MAP } from './data/skills';
 import { ACHIEVEMENTS } from './data/achievements';
 import { DEV_EVENTS, DEV_THRESHOLDS, FACILITY_EVENTS, replyTo } from './data/chatter';
+import { getUnitAwakenings, CRYSTAL_SHOP } from './data/awakening';
+import { GACHA_POOLS, POOL_MAP } from './data/gacha';
 import { fmt } from './format';
 
 const SAVE_KEY = 'honshitsu-leak-save-v1';
@@ -34,7 +36,7 @@ interface Actions {
   toggleParty: (id: string) => void;
   autoParty: () => void;
   equip: (unitId: string, itemId: string | null) => void;
-  pull: (count: 1 | 10, useTicket?: boolean) => PullResult[] | null;
+  pull: (count: 1 | 10 | 100, useTicket?: boolean, poolId?: GachaPoolId) => PullResult[] | null;
   allocSkill: (id: string) => void;
   resetSkills: () => void;
   useItem: (id: string, unitId?: string) => boolean;
@@ -44,7 +46,14 @@ interface Actions {
   winBattle: (ctx: BattleCtx) => RewardSummary;
   loseBattle: () => void;
   rebirth: () => number;
+  ultraRebirth: () => number;
   buyPrestige: (id: string) => void;
+  buyUltraPrestige: (id: string) => void;
+  awakenUnit: (unitId: string) => boolean;
+  giftBond: (unitId: string, itemId: string) => boolean;
+  buyCrystalShop: (shopId: string) => boolean;
+  claimDailyLogin: () => boolean;
+  claimUpdateGift: () => boolean;
   checkAchievements: () => void;
   pushChat: (s: string, t: string) => void;
   pushLines: (lines: Line[], gap?: number) => void;
@@ -73,6 +82,22 @@ function fresh(): GameData {
     memories: 0,
     totalMemories: 0,
     rebirths: 0,
+    // ウルトラ転生
+    ultraRebirths: 0,
+    cores: 0,
+    totalCores: 0,
+    ultraPrestige: {},
+    // 本質結晶
+    crystals: 0,
+    totalCrystals: 0,
+    // 部員新育成
+    awakening: {},
+    bonds: {},
+    // ログボ＆アプデ配布
+    claimedUpdateGift: false,
+    lastLoginDate: '',
+    loginStreak: 0,
+    loginClaimedDays: [],
     clicks: 0,
     allClicks: 0,
     facilities: {},
@@ -140,6 +165,7 @@ function rollEquip(weights: Record<Rarity, number>): string {
 export const shopPrice = (e: ShopEntry, ps: number, bought: number) => Math.ceil(Math.max(e.min, ps * e.sec) * Math.pow(e.grow, bought));
 export const lostBoxPrice = (ps: number, n: number) => Math.ceil(Math.max(300, ps * 60) * Math.pow(1.08, n));
 export const prestigeCost = (p: PrestigeDef, lv: number) => Math.floor(p.baseCost * Math.pow(p.costMult, lv));
+export const ultraPrestigeCost = (p: UltraPrestigeDef, lv: number) => Math.floor(p.baseCost * Math.pow(p.costMult, lv));
 
 function toB64(str: string) {
   const bytes = new TextEncoder().encode(str);
@@ -156,7 +182,26 @@ function fromB64(b64: string) {
 
 function sanitize(data: Partial<GameData>): GameData {
   const base = fresh();
-  const merged: GameData = { ...base, ...data, golden: null, toasts: [], chat: base.chat } as GameData;
+  const merged: GameData = {
+    ...base,
+    ...data,
+    golden: null,
+    toasts: [],
+    chat: base.chat,
+    // 既存セーブデータ互換性保証
+    ultraRebirths: typeof data.ultraRebirths === 'number' ? data.ultraRebirths : 0,
+    cores: typeof data.cores === 'number' ? data.cores : 0,
+    totalCores: typeof data.totalCores === 'number' ? data.totalCores : 0,
+    ultraPrestige: data.ultraPrestige && typeof data.ultraPrestige === 'object' ? data.ultraPrestige : {},
+    crystals: typeof data.crystals === 'number' ? data.crystals : 0,
+    totalCrystals: typeof data.totalCrystals === 'number' ? data.totalCrystals : 0,
+    awakening: data.awakening && typeof data.awakening === 'object' ? data.awakening : {},
+    bonds: data.bonds && typeof data.bonds === 'object' ? data.bonds : {},
+    claimedUpdateGift: !!data.claimedUpdateGift,
+    lastLoginDate: typeof data.lastLoginDate === 'string' ? data.lastLoginDate : '',
+    loginStreak: typeof data.loginStreak === 'number' ? data.loginStreak : 0,
+    loginClaimedDays: Array.isArray(data.loginClaimedDays) ? data.loginClaimedDays : [],
+  } as GameData;
   merged.units = merged.units && typeof merged.units === 'object' ? merged.units : base.units;
   for (const id of Object.keys(merged.units)) if (!UNIT_MAP[id]) delete merged.units[id];
   const party = Array.isArray(merged.party) ? merged.party : base.party;
@@ -425,64 +470,125 @@ export const useGame = create<GameStore>()((set, get) => ({
     set({ items, units: { ...s.units, [unitId]: { ...u, equip: itemId } } });
   },
 
-  pull: (count, useTicket = false) => {
+  pull: (count, useTicket = false, poolId = 'standard') => {
     const s = get();
     const m = computeMods(s);
-    const cost = count === 10 ? 45 : 5;
-    if (useTicket) {
-      if ((s.items['ticket'] || 0) < count) return null;
-    } else if (s.cans < cost) return null;
+    const poolDef = POOL_MAP[poolId] || POOL_MAP['standard'];
+    const isEssencePool = poolDef.currency === 'honshitsu';
+
+    // コスト計算
+    let canCost = 0;
+    let ticketCost = 0;
+    let hsCost = 0;
+
+    if (isEssencePool) {
+      hsCost = count === 100 ? 8e5 : count === 10 ? 9e4 : 1e4;
+      if (s.honshitsu < hsCost) return null;
+    } else if (useTicket) {
+      ticketCost = count;
+      if ((s.items['ticket'] || 0) < ticketCost) return null;
+    } else {
+      const discount = s.ultraPrestige['u_auto_mach'] ? 20 : 0;
+      canCost = count === 100 ? Math.max(300, 400 - discount) : count === 10 ? 45 : 5;
+      if (s.cans < canCost) return null;
+    }
+
     const rates = gachaRates(m);
     const pmax = pityMax(m);
+    const maxStar = getMaxStar(m);
     let pity = s.pity;
     const units: Record<string, OwnedUnit> = { ...s.units };
     const party = [...s.party];
     let refundTotal = 0;
+    let crystalsTotal = 0;
     const rolled: number[] = [];
     const results: PullResult[] = [];
+
     for (let i = 0; i < count; i++) {
       pity++;
       let r = rollWeighted(rates);
-      if (count === 10 && i === 9) {
-        const best = Math.max(rarityRank(r), ...rolled);
-        if (m.tenGuarantee > 0 && best < rarityRank('SSR')) r = 'SSR';
-        else if (best < rarityRank('SR')) r = 'SR';
+
+      // 10連保証（10の倍数の最後）
+      if (count >= 10 && (i + 1) % 10 === 0) {
+        const recentChunk = rolled.slice(i - 9, i);
+        const bestInChunk = Math.max(rarityRank(r), ...(recentChunk.length ? recentChunk : [0]));
+        if (m.tenGuarantee > 0 && bestInChunk < rarityRank('SSR')) r = 'SSR';
+        else if (bestInChunk < rarityRank('SR')) r = 'SR';
       }
+
+      // 100連ボーナス（100連目）
+      if (count === 100 && i === 99) {
+        const bestAll = Math.max(rarityRank(r), ...rolled);
+        if (bestAll < rarityRank('SSR')) r = 'SSR';
+      }
+
+      // 天井
       if (pity >= pmax && rarityRank(r) < rarityRank('UR')) r = 'UR';
       if (rarityRank(r) >= rarityRank('UR')) pity = 0;
       rolled.push(rarityRank(r));
+
+      // プール別キャラ選出（ピックアップ重みづけ）
       const pool = UNITS.filter((u) => u.rarity === r);
-      const def = pool[Math.floor(Math.random() * pool.length)];
+      let def = pool[0];
+      if (pool.length > 0) {
+        if (poolDef.featuredIds && poolDef.featuredIds.length > 0) {
+          const weights: Record<string, number> = {};
+          for (const u of pool) {
+            weights[u.id] = poolDef.featuredIds.includes(u.id) ? 3 : 1;
+          }
+          const chosenId = rollWeighted(weights);
+          def = UNIT_MAP[chosenId] || pool[0];
+        } else {
+          def = pool[Math.floor(Math.random() * pool.length)];
+        }
+      }
+
       const cur = units[def.id];
       if (!cur) {
         units[def.id] = { level: 1, star: 0, equip: null };
         const e = party.indexOf(null);
         if (e >= 0) party[e] = def.id;
-        results.push({ id: def.id, isNew: true, star: 0, refund: 0 });
-      } else if (cur.star < 5) {
+        results.push({ id: def.id, isNew: true, star: 0, refund: 0, crystals: 0 });
+      } else if (cur.star < maxStar) {
         units[def.id] = { ...cur, star: cur.star + 1 };
-        results.push({ id: def.id, isNew: false, star: cur.star + 1, refund: 0 });
+        results.push({ id: def.id, isNew: false, star: cur.star + 1, refund: 0, crystals: 0 });
       } else {
+        // 完凸済み！缶＋✝本質結晶✝に還元
         const rf = RARITY_REFUND[def.rarity];
+        const cry = Math.floor(RARITY_CRYSTALS[def.rarity] * (1 + (m.crystalBonus || 0)));
         refundTotal += rf;
-        results.push({ id: def.id, isNew: false, star: 5, refund: rf });
+        crystalsTotal += cry;
+        results.push({ id: def.id, isNew: false, star: cur.star, refund: rf, crystals: cry });
       }
     }
-    const newCans = useTicket ? s.cans + refundTotal : s.cans - cost + refundTotal;
-    const items = useTicket ? { ...s.items, ticket: (s.items['ticket'] || 0) - count } : s.items;
+
+    const newCans = isEssencePool
+      ? s.cans + refundTotal
+      : useTicket
+        ? s.cans + refundTotal
+        : s.cans - canCost + refundTotal;
+
+    const newHonshitsu = isEssencePool ? s.honshitsu - hsCost : s.honshitsu;
+    const items = useTicket ? { ...s.items, ticket: (s.items['ticket'] || 0) - ticketCost } : s.items;
+
     set({
       units,
       party,
       pity,
       pulls: s.pulls + count,
       cans: newCans,
+      honshitsu: newHonshitsu,
       items,
+      crystals: s.crystals + crystalsTotal,
+      totalCrystals: s.totalCrystals + crystalsTotal,
       hadZeroCans: s.hadZeroCans || newCans <= 0,
       xp: s.xp + 3 * count * (1 + m.xpPct),
     });
+
     let best = results[0];
     for (const r of results) if (rarityRank(UNIT_MAP[r.id].rarity) > rarityRank(UNIT_MAP[best.id].rarity)) best = r;
     const bdef = UNIT_MAP[best.id];
+
     if (rarityRank(bdef.rarity) >= rarityRank('SSR')) {
       const lines: Line[] = [['sys', `✝ ${bdef.name}【${bdef.rarity}】が教室に漏れ出した！`]];
       if (bdef.speaker) lines.push([bdef.speaker, bdef.quote]);
@@ -490,9 +596,14 @@ export const useGame = create<GameStore>()((set, get) => ({
       else if (bdef.rarity === 'LR') lines.push(['kuraishi', '✝LR✝……！ 聖典に記録します'], ['mie', 'は？']);
       else lines.push(['ryoma', '出た！ これまじ✝本質✝']);
       get().pushLines(lines, 900);
-    } else if (count === 10 && rarityRank(bdef.rarity) <= rarityRank('SR')) {
-      get().pushLines([['mie', '10連でそれか'], ['ryoma', 'ハズレも✝本質✝']], 900);
+    } else if (count >= 10 && rarityRank(bdef.rarity) <= rarityRank('SR')) {
+      get().pushLines([['mie', `${count}連でそれか`], ['ryoma', 'ハズレも✝本質✝']], 900);
     }
+
+    if (crystalsTotal > 0) {
+      get().toast(`💎 完凸余剰により ✝本質結晶✝ +${crystalsTotal} 獲得！`, 'rare');
+    }
+
     get().processLevel();
     return results;
   },
@@ -567,8 +678,9 @@ export const useGame = create<GameStore>()((set, get) => ({
         if (!unitId) return false;
         const u = s.units[unitId];
         if (!u) return false;
-        if (u.star >= 5) {
-          get().toast('すでに5凸です', 'bad');
+        const maxStar = getMaxStar(computeMods(s));
+        if (u.star >= maxStar) {
+          get().toast(`すでに最大（★${maxStar}）凸です`, 'bad');
           return false;
         }
         patch.units = { ...s.units, [unitId]: { ...u, star: u.star + 1 } };
@@ -655,6 +767,7 @@ export const useGame = create<GameStore>()((set, get) => ({
     let unitResult: RewardSummary['unitResult'];
     if (unit && UNIT_MAP[unit]) {
       const cur = units[unit];
+      const maxStar = getMaxStar(computeMods(s));
       if (!cur) {
         units[unit] = { level: 1, star: 0, equip: null };
         unitResult = 'new';
@@ -663,12 +776,14 @@ export const useGame = create<GameStore>()((set, get) => ({
           party = [...party];
           party[e] = unit;
         }
-      } else if (cur.star < 5) {
+      } else if (cur.star < maxStar) {
         units[unit] = { ...cur, star: cur.star + 1 };
         unitResult = 'star';
       } else {
         unitResult = 'refund';
         cans += RARITY_REFUND[UNIT_MAP[unit].rarity];
+        const cry = RARITY_CRYSTALS[UNIT_MAP[unit].rarity];
+        set({ crystals: s.crystals + cry, totalCrystals: s.totalCrystals + cry });
       }
     }
     const patch: Partial<GameData> = {
@@ -752,6 +867,57 @@ export const useGame = create<GameStore>()((set, get) => ({
     return gain;
   },
 
+  ultraRebirth: () => {
+    const s = get();
+    const m = computeMods(s);
+    const gain = ultraRebirthGain(s, m);
+    if (gain <= 0) return 0;
+    const units: Record<string, OwnedUnit> = {};
+    for (const id of Object.keys(s.units)) units[id] = { ...s.units[id], level: 1 };
+
+    const bonusCans = s.ultraPrestige['u_soup_ocean'] ? 500 : 0;
+
+    set({
+      honshitsu: 0,
+      totalEarned: 0,
+      facilities: {},
+      units,
+      level: 1,
+      xp: 0,
+      skills: {},
+      buffs: [],
+      maxDev: 0,
+      shopBought: {},
+      lostBoxOpened: 0,
+      // ウルトラ転生：地面の記憶とプレステージツリーすらもリセット！
+      memories: 0,
+      prestige: {},
+      cores: s.cores + gain,
+      totalCores: s.totalCores + gain,
+      ultraRebirths: s.ultraRebirths + 1,
+      cans: s.cans + bonusCans,
+      golden: null,
+      nextGolden: 30,
+      clicks: 0,
+      autoAcc: 0,
+      canAcc: 0,
+      lastTick: Date.now(),
+    });
+
+    get().pushLines([
+      ['sys', `🌌 糸魚川-静岡構造線が激しく破断し、理数科の教室が時空を超越した……（ウルトラ転生 ${s.ultraRebirths + 1}回目）`],
+      ['narr', '地面の記憶すらも彼方へ消え去り、原初の✝本質✝へと回帰した。'],
+      ['rei', '面白いな。世界が作り直されたよ'],
+      ['ryoma', 'これが……ウルトラ転生の✝本質✝か'],
+      ['mie', '転生ツリーまで消し飛ばすなよ……'],
+      ['heikatsu', '地面すらも超えたか。だが地面は忘れないぞ'],
+      ['kuraishi', '✝聖典✝に記します。第零章・宇宙開闢'],
+    ], 1000);
+
+    get().save();
+    return gain;
+  },
+
   buyPrestige: (id) => {
     const s = get();
     const p = PRESTIGE_MAP[id];
@@ -761,6 +927,221 @@ export const useGame = create<GameStore>()((set, get) => ({
     const cost = prestigeCost(p, lv);
     if (s.memories < cost) return;
     set({ memories: s.memories - cost, prestige: { ...s.prestige, [id]: lv + 1 } });
+  },
+
+  buyUltraPrestige: (id) => {
+    const s = get();
+    const up = ULTRA_PRESTIGE_MAP[id];
+    if (!up) return;
+    const lv = s.ultraPrestige[id] || 0;
+    if (lv >= up.max) return;
+    const cost = ultraPrestigeCost(up, lv);
+    if (s.cores < cost) {
+      get().toast('構造線の核が足りない', 'bad');
+      return;
+    }
+    set({ cores: s.cores - cost, ultraPrestige: { ...s.ultraPrestige, [id]: lv + 1 } });
+    get().toast(`🌌 超越強化「${up.name}」Lv${lv + 1}習得！`, 'rare');
+  },
+
+  awakenUnit: (unitId) => {
+    const s = get();
+    const u = s.units[unitId];
+    const def = UNIT_MAP[unitId];
+    if (!u || !def) return false;
+    const current = s.awakening[unitId] || 0;
+    const stages = getUnitAwakenings(unitId);
+    if (current >= stages.length) {
+      get().toast('すでに最高覚醒段階です', 'bad');
+      return false;
+    }
+    const next = stages[current];
+    if (u.star < next.reqStar) {
+      get().toast(`★${next.reqStar}凸以上必要です`, 'bad');
+      return false;
+    }
+    if (u.level < next.reqLevel) {
+      get().toast(`レベル${next.reqLevel}以上必要です`, 'bad');
+      return false;
+    }
+    if (s.honshitsu < next.costHonshitsu) {
+      get().toast('✝本質✝が足りません', 'bad');
+      return false;
+    }
+    if (s.cans < next.costCans) {
+      get().toast('コーンスープ缶が足りません', 'bad');
+      return false;
+    }
+    if (s.crystals < next.costCrystals) {
+      get().toast('✝本質結晶✝が足りません', 'bad');
+      return false;
+    }
+
+    set({
+      honshitsu: s.honshitsu - next.costHonshitsu,
+      cans: s.cans - next.costCans,
+      crystals: s.crystals - next.costCrystals,
+      awakening: { ...s.awakening, [unitId]: current + 1 },
+    });
+
+    get().toast(`✨ ${def.name}が「${next.title}」に本質覚醒！`, 'rare');
+    get().pushLines([
+      ['sys', `✝ ${def.name}が本質覚醒【第${current + 1}段階：${next.title}】を解放した！`],
+      [def.speaker || 'ryoma', `「${next.flavor}」`],
+    ]);
+    return true;
+  },
+
+  giftBond: (unitId, itemId) => {
+    const s = get();
+    const u = s.units[unitId];
+    const def = UNIT_MAP[unitId];
+    if (!u || !def) return false;
+    if ((s.items[itemId] || 0) <= 0) {
+      get().toast('アイテムを持っていません', 'bad');
+      return false;
+    }
+
+    const expTable: Record<string, number> = {
+      hotsoup: 30,
+      jiroitem: 50,
+      pan: 20,
+      tamago: 40,
+      gyuu: 60,
+    };
+    const addExp = (expTable[itemId] || 25) * (1 + (computeMods(s).bondExpPct || 0));
+
+    const curBond = s.bonds[unitId] || { exp: 0, lv: 1 };
+    let nExp = curBond.exp + addExp;
+    let nLv = curBond.lv;
+    const reqNext = (lv: number) => Math.floor(50 * Math.pow(1.3, lv - 1));
+
+    while (nLv < 10 && nExp >= reqNext(nLv)) {
+      nExp -= reqNext(nLv);
+      nLv++;
+      get().toast(`❤️ ${def.name}との絆Lvが${nLv}に上がった！`, 'good');
+    }
+
+    set({
+      items: { ...s.items, [itemId]: s.items[itemId] - 1 },
+      bonds: { ...s.bonds, [unitId]: { exp: nExp, lv: nLv } },
+    });
+    return true;
+  },
+
+  buyCrystalShop: (shopId) => {
+    const s = get();
+    const entry = CRYSTAL_SHOP.find((e) => e.id === shopId);
+    if (!entry) return false;
+    if (s.crystals < entry.costCrystals) {
+      get().toast('✝本質結晶✝が足りません', 'bad');
+      return false;
+    }
+
+    const patch: Partial<GameData> = {
+      crystals: s.crystals - entry.costCrystals,
+    };
+
+    if (entry.rewardKind === 'cans') {
+      patch.cans = s.cans + entry.amount;
+    } else if (entry.rewardKind === 'ticket') {
+      patch.items = { ...s.items, ticket: (s.items['ticket'] || 0) + entry.amount };
+    } else if (entry.rewardItemId) {
+      if (entry.rewardItemId === 'core_item') {
+        patch.cores = s.cores + 1;
+        patch.totalCores = s.totalCores + 1;
+      } else {
+        patch.items = { ...s.items, [entry.rewardItemId]: (s.items[entry.rewardItemId] || 0) + entry.amount };
+      }
+    }
+
+    set(patch);
+    get().toast(`🛒 ${entry.name} を交換しました！`, 'good');
+    return true;
+  },
+
+  claimDailyLogin: () => {
+    const s = get();
+    const today = new Date().toISOString().split('T')[0];
+    if (s.lastLoginDate === today) {
+      get().toast('今日の出席ボーナスは受取済みです', 'info');
+      return false;
+    }
+
+    const nextStreak = s.loginStreak + 1;
+    const dayInCycle = ((nextStreak - 1) % 7) + 1; // 1〜7日目
+
+    const patch: Partial<GameData> = {
+      lastLoginDate: today,
+      loginStreak: nextStreak,
+      loginClaimedDays: [...(s.loginClaimedDays || []), dayInCycle],
+    };
+
+    const items = { ...s.items };
+    let msg = '';
+
+    switch (dayInCycle) {
+      case 1:
+        patch.cans = s.cans + 50;
+        msg = '🥫コーンスープ缶×50';
+        break;
+      case 2:
+        items.ticket = (items.ticket || 0) + 3;
+        patch.items = items;
+        msg = '🎫召喚チケット×3';
+        break;
+      case 3:
+        patch.crystals = s.crystals + 10;
+        patch.totalCrystals = s.totalCrystals + 10;
+        msg = '💎✝本質結晶✝×10';
+        break;
+      case 4:
+        patch.cans = s.cans + 100;
+        msg = '🥫コーンスープ缶×100';
+        break;
+      case 5:
+        items.ticket = (items.ticket || 0) + 10;
+        patch.items = items;
+        msg = '🎫召喚チケット×10';
+        break;
+      case 6:
+        items.mapcopy = (items.mapcopy || 0) + 2;
+        patch.items = items;
+        msg = '🗺️同じ地図（限凸素材）×2';
+        break;
+      case 7:
+        patch.cans = s.cans + 300;
+        patch.crystals = s.crystals + 30;
+        patch.totalCrystals = s.totalCrystals + 30;
+        items.ticket = (items.ticket || 0) + 10;
+        patch.items = items;
+        msg = '🥫缶×300 ＋ 💎結晶×30 ＋ 🎫チケット×10！';
+        break;
+    }
+
+    set(patch);
+    get().toast(`📅 出席${nextStreak}日目達成！ ${msg} を獲得！`, 'rare');
+    get().pushChat('sys', `【登校】出席スタンプが押されました（通算${nextStreak}日目：${msg}獲得）`);
+    return true;
+  },
+
+  claimUpdateGift: () => {
+    const s = get();
+    if (s.claimedUpdateGift) return false;
+    set({
+      cans: s.cans + 450,
+      claimedUpdateGift: true,
+    });
+    get().toast('🎉 大型アプデ記念！🥫コーンスープ450缶を受け取りました！', 'rare');
+    get().pushLines([
+      ['sys', '【アプデ記念】北棟の自販機に奇跡の大量補充！理数科生徒全員に🥫コーンスープ450缶を配布しました'],
+      ['ryoma', '450個はまじ✝本質✝。自販機壊れたのか？'],
+      ['mie', '450本も自販機に入るわけないだろ'],
+      ['sato', '……あるときよりないときの方が本質だったが、450本あるなら飲む'],
+      ['rei', '面白いな'],
+      ['heikatsu', '冬場に温かいスープがあるのは、地殻の恩恵だ'],
+    ], 1100);
+    return true;
   },
 
   checkAchievements: () => {
