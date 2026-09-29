@@ -1,4 +1,4 @@
-import type { AwakeningStage, ItemDef } from '../types';
+import type { AwakeningStage } from '../types';
 
 export interface UnitAwakeningDef {
   unitId: string;
@@ -416,6 +416,8 @@ export interface CrystalShopEntry {
   amount: number;
 }
 
+// 交換から再召喚しても増殖しない価格に設定。標準召喚の重複結晶は最大6/回、
+// 500缶からは割引込みで最大144回（最大864結晶）なので、各交換は必ず純減になる。
 export const CRYSTAL_SHOP: CrystalShopEntry[] = [
   {
     id: 'cs_map',
@@ -432,7 +434,7 @@ export const CRYSTAL_SHOP: CrystalShopEntry[] = [
     name: '召喚チケット×10',
     emoji: '🎫',
     desc: '自販機を10回引けるチケット束',
-    costCrystals: 20,
+    costCrystals: 70,
     rewardKind: 'ticket',
     amount: 10,
   },
@@ -441,7 +443,7 @@ export const CRYSTAL_SHOP: CrystalShopEntry[] = [
     name: '召喚チケット超特大パック×100',
     emoji: '🎫',
     desc: '100連召喚が一気に引けるお得なチケット束',
-    costCrystals: 160,
+    costCrystals: 650,
     rewardKind: 'ticket',
     amount: 100,
   },
@@ -450,7 +452,7 @@ export const CRYSTAL_SHOP: CrystalShopEntry[] = [
     name: 'コーンスープ大缶詰（500缶）',
     emoji: '🥫',
     desc: '北棟の自販機から抽出された濃厚スープ500缶',
-    costCrystals: 30,
+    costCrystals: 900,
     rewardKind: 'cans',
     amount: 500,
   },

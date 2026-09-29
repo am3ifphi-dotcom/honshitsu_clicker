@@ -17,6 +17,14 @@ export const ITEMS: ItemDef[] = [
   // ───── 消費アイテム（部員） ─────
   { id: 'gyuu', name: '松阪牛', emoji: '🥩', rarity: 'SR', kind: 'consumable', scene: 'unit', effect: { kind: 'levelUp', levels: 3 }, desc: '部員のレベル+3（上限まで）', flavor: '三重県産の松阪牛が臣下に伝えた味。' },
   { id: 'mapcopy', name: '同じ地形図（コピー）', emoji: '🗾', rarity: 'UR', kind: 'consumable', scene: 'unit', effect: { kind: 'star' }, desc: '部員の凸+1（最大5）', flavor: '三回目。同じに見えるか？' },
+  // ───── LR進化素材（指定バトルの初回報酬・再挑戦ドロップ） ─────
+  { id: 'evo_ryoma', name: '北極の灼熱核', emoji: '🌶️', rarity: 'LR', kind: 'material', desc: '燃え盛る真夏の✝本質✝への進化素材', flavor: '両馬が北極ラーメンを食べて火を噴いた日の、冷めない一滴。' },
+  { id: 'evo_rei', name: '放課後の黒板片', emoji: '🧮', rarity: 'LR', kind: 'material', desc: '孤高ではない首席への進化素材', flavor: '夕暮れの教室。最後の一人が帰るまで、数式だけが黒板に残っていた。' },
+  { id: 'evo_terachi', name: '星筆のインク', emoji: '🖊️', rarity: 'LR', kind: 'material', desc: '星と地面を繋ぐ声への進化素材', flavor: '配信の向こうにいる誰かへ、書いて読み上げた言葉の跡。' },
+  { id: 'evo_heikatsu', name: '等高線の測量核', emoji: '🗺️', rarity: 'LR', kind: 'material', desc: '地形図の向こう側が見える男への進化素材', flavor: '同じ地図を三度見た人だけが気づく、地面の時間。' },
+  { id: 'evo_mie', name: '渡されたパスの残響', emoji: '🏀', rarity: 'LR', kind: 'material', desc: '［冷笑を脱ぎ捨てて］への進化素材', flavor: '理屈じゃない。知っていて、それでも出したパス。' },
+  { id: 'evo_pregen', name: '位相崩壊の断章', emoji: '☨', rarity: 'LR', kind: 'material', desc: '終端なき位相への進化素材', flavor: 'グレートチェーンの頂点から、さらに外側へこぼれた一行。' },
+  { id: 'evo_jimen', name: '地層の記憶核', emoji: '🌋', rarity: 'LR', kind: 'material', desc: '地層の果てを抱くものへの進化素材', flavor: '新しい地面も古い地面も、そこに立った人を忘れない。' },
   // ───── 装備 ─────
   { id: 'pen', name: 'シャーペン（零の回転用）', emoji: '✏️', rarity: 'N', kind: 'equip', equip: { atkPct: 0.1, spdPct: 0.05 }, desc: 'ATK+10% / 速度+5%', flavor: '授業中に回すためのもの。' },
   { id: 'paper', name: 'A4コピー用紙（21枚）', emoji: '📄', rarity: 'N', kind: 'equip', equip: { hpPct: 0.2 }, desc: 'HP+20%', flavor: '本質配信第四回で使われた。寺地の引き出しにしまってある。' },
@@ -160,10 +168,10 @@ export const SHOP: ShopEntry[] = [
 ];
 
 export const EQUIP_WEIGHTS = (rec: number): Record<Rarity, number> => {
-  if (rec >= 95) return { N: 8, R: 27, SR: 37, SSR: 22, UR: 6, LR: 0 };
-  if (rec >= 80) return { N: 18, R: 33, SR: 32, SSR: 14, UR: 3, LR: 0 };
-  if (rec >= 65) return { N: 30, R: 36, SR: 25, SSR: 8, UR: 1, LR: 0 };
-  return { N: 48, R: 35, SR: 14, SSR: 3, UR: 0, LR: 0 };
+  if (rec >= 95) return { N: 8, R: 27, SR: 37, SSR: 22, UR: 6, LR: 0, EX: 0 };
+  if (rec >= 80) return { N: 18, R: 33, SR: 32, SSR: 14, UR: 3, LR: 0, EX: 0 };
+  if (rec >= 65) return { N: 30, R: 36, SR: 25, SSR: 8, UR: 1, LR: 0, EX: 0 };
+  return { N: 48, R: 35, SR: 14, SSR: 3, UR: 0, LR: 0, EX: 0 };
 };
 
-export const LOSTBOX_WEIGHTS: Record<Rarity, number> = { N: 40, R: 35, SR: 18, SSR: 6, UR: 1, LR: 0 };
+export const LOSTBOX_WEIGHTS: Record<Rarity, number> = { N: 40, R: 35, SR: 18, SSR: 6, UR: 1, LR: 0, EX: 0 };

@@ -1,6 +1,6 @@
 import type { ConsumableEffect, EnemyDef, GameData, SkillKind } from './types';
 import { derive, unitStats, devToPower } from './formulas';
-import { UNIT_MAP } from './data/units';
+import { getUnitForm } from './data/units';
 import { fmt } from './format';
 
 export interface BSkill {
@@ -94,7 +94,7 @@ export function createBattle(s: GameData, rec: number, enemies: EnemyDef[]): BSt
   const allies: Fighter[] = [];
   s.party.forEach((id, i) => {
     if (!id) return;
-    const def = UNIT_MAP[id];
+    const def = getUnitForm(id, !!s.evolvedUnits?.[id]);
     const u = s.units[id];
     if (!def || !u) return;
     const st = unitStats(def, u, m, s);

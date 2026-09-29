@@ -367,3 +367,182 @@ button:disabled {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ───────── EX進化：キャラクター別・常時パッシブエフェクト ───────── */
+.unit-icon-glyph {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  transform-origin: center;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
+}
+.unit-evo-fx {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  isolation: isolate;
+}
+.unit-evo-fx__layer,
+.unit-evo-fx__glint {
+  position: absolute;
+  inset: -35%;
+  display: block;
+}
+.unit-evo-fx__layer--one { opacity: 0.38; }
+.unit-evo-fx__layer--two { opacity: 0.3; mix-blend-mode: screen; }
+.unit-evo-fx__glint {
+  inset: -65% -25%;
+  opacity: 0.5;
+  background: linear-gradient(112deg, transparent 42%, rgba(255,255,255,.65) 49%, transparent 56%);
+  transform: translateX(-120%) rotate(12deg);
+  animation: unitEvoGlint 4.8s ease-in-out infinite;
+}
+.unit-evo-fx--inferno .unit-evo-fx__layer--one {
+  background: radial-gradient(ellipse at 50% 100%, rgba(255,74,14,.68), transparent 58%), repeating-linear-gradient(78deg, transparent 0 9px, rgba(255,188,49,.3) 10px 12px, transparent 14px 22px);
+  animation: unitEvoFlare 2s ease-in-out infinite alternate;
+}
+.unit-evo-fx--inferno .unit-evo-fx__layer--two { background: linear-gradient(0deg, rgba(255,39,10,.36), transparent 63%); animation: unitEvoFlicker .38s steps(2) infinite; }
+.unit-evo-fx--afterglow .unit-evo-fx__layer--one { background: radial-gradient(ellipse at 50% 110%, rgba(255,196,119,.68), transparent 65%); animation: unitEvoBreath 3.6s ease-in-out infinite; }
+.unit-evo-fx--afterglow .unit-evo-fx__layer--two { background: repeating-linear-gradient(125deg, transparent 0 14px, rgba(255,235,186,.17) 15px 16px, transparent 17px 30px); animation: unitEvoDrift 11s linear infinite; }
+.unit-evo-fx--starfall .unit-evo-fx__layer--one { background: radial-gradient(circle at 24% 26%, #fff9 0 1px, transparent 2px), radial-gradient(circle at 72% 62%, #d7f6ff 0 1px, transparent 2px), radial-gradient(circle at 48% 84%, #fff 0 1px, transparent 2px), radial-gradient(ellipse at 50% 100%, rgba(72,164,255,.4), transparent 60%); background-size: 29px 31px, 37px 39px, 23px 27px, 100% 100%; animation: unitEvoStarfall 6s linear infinite; }
+.unit-evo-fx--starfall .unit-evo-fx__layer--two { background: linear-gradient(135deg, transparent 44%, rgba(196,243,255,.42) 48%, transparent 52%); animation: unitEvoDrift 7s linear infinite; }
+.unit-evo-fx--contour .unit-evo-fx__layer--one { background: repeating-radial-gradient(ellipse at 38% 56%, transparent 0 8px, rgba(255,220,145,.42) 9px 10px, transparent 11px 17px); animation: unitEvoContour 9s ease-in-out infinite; }
+.unit-evo-fx--contour .unit-evo-fx__layer--two { background: repeating-radial-gradient(ellipse at 72% 36%, transparent 0 13px, rgba(255,255,255,.2) 14px 15px, transparent 16px 23px); animation: unitEvoContour 13s ease-in-out infinite reverse; }
+.unit-evo-fx--court-pass .unit-evo-fx__layer--one { background: repeating-linear-gradient(104deg, transparent 0 17px, rgba(166,225,255,.48) 18px 19px, transparent 20px 35px); transform: translateX(-18%); animation: unitEvoRush 1.8s ease-in-out infinite; }
+.unit-evo-fx--court-pass .unit-evo-fx__layer--two { background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(96,190,255,.6) 31% 32%, transparent 34%); animation: unitEvoOrbit 5s linear infinite; }
+.unit-evo-fx--phase-break .unit-evo-fx__layer--one { background: repeating-linear-gradient(0deg, transparent 0 8px, rgba(255,36,83,.68) 9px 10px, transparent 11px 17px); mix-blend-mode: screen; animation: unitEvoGlitch 1.1s steps(2) infinite; }
+.unit-evo-fx--phase-break .unit-evo-fx__layer--two { background: linear-gradient(90deg, transparent 24%, rgba(255,255,255,.55) 49%, transparent 51%, rgba(255,38,95,.48) 75%, transparent 80%); animation: unitEvoPhase 2.4s steps(3) infinite; }
+.unit-evo-fx--strata-memory .unit-evo-fx__layer--one { background: repeating-linear-gradient(0deg, transparent 0 6px, rgba(219,168,108,.52) 7px 8px, rgba(102,57,32,.22) 9px 12px); mask-image: linear-gradient(0deg, #000, transparent 92%); animation: unitEvoStrata 5s ease-in-out infinite; }
+.unit-evo-fx--strata-memory .unit-evo-fx__layer--two { background: radial-gradient(ellipse at 50% 100%, rgba(255,206,124,.56), transparent 58%); animation: unitEvoBreath 4s ease-in-out infinite; }
+
+@keyframes unitEvoGlint { 0%, 15% { transform: translateX(-120%) rotate(12deg); } 70%, 100% { transform: translateX(120%) rotate(12deg); } }
+@keyframes unitEvoFlare { from { transform: translateY(5%) scale(1); filter: saturate(1); } to { transform: translateY(-2%) scale(1.12); filter: saturate(1.5); } }
+@keyframes unitEvoFlicker { 0%, 100% { opacity: .18; } 42% { opacity: .46; } 44% { opacity: .12; } 72% { opacity: .55; } }
+@keyframes unitEvoBreath { 0%, 100% { opacity: .24; transform: scale(.95); } 50% { opacity: .72; transform: scale(1.08); } }
+@keyframes unitEvoDrift { to { transform: rotate(360deg); } }
+@keyframes unitEvoStarfall { from { background-position: 0 0, 7px 0, 17px 0, 0 0; } to { background-position: -35px 45px, 50px 80px, -30px 100px, 0 0; } }
+@keyframes unitEvoContour { 0%, 100% { transform: scale(.95) rotate(-4deg); } 50% { transform: scale(1.12) rotate(4deg); } }
+@keyframes unitEvoRush { 0%, 100% { transform: translateX(-22%) skewX(-8deg); opacity: .2; } 45% { opacity: .55; } 65% { transform: translateX(22%) skewX(-8deg); opacity: .35; } }
+@keyframes unitEvoOrbit { to { transform: rotate(360deg) scale(1.12); } }
+@keyframes unitEvoGlitch { 0%, 100% { transform: translate(0); clip-path: inset(0 0 0 0); } 20% { transform: translate(3%, -2%); clip-path: inset(14% 0 69% 0); } 40% { transform: translate(-2%, 1%); clip-path: inset(68% 0 12% 0); } 60% { transform: translate(1%, 0); clip-path: inset(0 0 0 0); } }
+@keyframes unitEvoPhase { 0%, 100% { opacity: .12; transform: translateX(-16%); } 50% { opacity: .6; transform: translateX(16%); } }
+@keyframes unitEvoStrata { 0%, 100% { transform: translateY(6%) scaleY(.85); } 50% { transform: translateY(-2%) scaleY(1.1); } }
+
+/* ───────── EX固有のシネマティック進化演出 ───────── */
+.evo-cut {
+  --evo-accent: #67e8f9;
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #f8fafc;
+  background: #03030a;
+  isolation: isolate;
+  transition: opacity .42s ease, transform .42s ease;
+}
+.evo-cut.is-finishing { opacity: 0; transform: scale(1.035); }
+.evo-cut__backdrop,
+.evo-cut__grid,
+.evo-cut__contours,
+.evo-cut__rays,
+.evo-cut__particles,
+.evo-cut__flash { position: absolute; inset: 0; pointer-events: none; }
+.evo-cut__backdrop { background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--evo-accent) 28%, transparent), transparent 49%), radial-gradient(ellipse at 50% 110%, color-mix(in srgb, var(--evo-accent) 16%, #03030a), #03030a 68%); }
+.evo-cut__grid { opacity: .16; background-image: linear-gradient(color-mix(in srgb, var(--evo-accent) 38%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--evo-accent) 38%, transparent) 1px, transparent 1px); background-size: 36px 36px; mask-image: radial-gradient(ellipse, #000 10%, transparent 78%); transform: perspective(650px) rotateX(56deg) scale(1.8) translateY(18%); transform-origin: center bottom; }
+.evo-cut__contours { opacity: .22; background: repeating-radial-gradient(ellipse at 50% 52%, transparent 0 26px, color-mix(in srgb, var(--evo-accent) 33%, transparent) 27px 28px, transparent 29px 49px); animation: evoContourShift 15s ease-in-out infinite; }
+.evo-cut__rays { opacity: .23; background: repeating-conic-gradient(from 0deg at 50% 46%, transparent 0deg 9deg, color-mix(in srgb, var(--evo-accent) 38%, transparent) 9.4deg 9.8deg, transparent 10.2deg 18deg); mask-image: radial-gradient(circle, #000 2%, transparent 70%); animation: evoRayTurn 48s linear infinite; }
+.evo-cut__particle { position: absolute; bottom: -10%; color: var(--evo-accent); opacity: 0; text-shadow: 0 0 16px var(--evo-accent); white-space: nowrap; animation: evoParticleRise linear infinite; }
+.evo-cut__flash { z-index: 6; opacity: 0; background: radial-gradient(circle, #fff 0%, color-mix(in srgb, var(--evo-accent) 74%, white) 16%, transparent 76%); }
+.evo-cut__flash.is-on { animation: evoFlash .95s ease-out both; }
+.evo-cut__frame { position: relative; z-index: 8; display: flex; width: min(100%, 1120px); height: 100dvh; min-height: 0; flex-direction: column; gap: clamp(8px, 1.7vh, 18px); padding: clamp(12px, 3vh, 30px) clamp(14px, 4vw, 46px); overflow-y: auto; }
+.evo-cut__eyebrow { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid color-mix(in srgb, var(--evo-accent) 38%, transparent); padding-bottom: 8px; color: color-mix(in srgb, var(--evo-accent) 84%, white); font: 900 10px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .22em; }
+.evo-cut__status { display: inline-flex; align-items: center; gap: 6px; color: rgba(255,255,255,.62); letter-spacing: .1em; }
+.evo-cut__status i { width: 6px; height: 6px; border-radius: 50%; background: var(--evo-accent); box-shadow: 0 0 10px var(--evo-accent); animation: evoStatus 1s ease-in-out infinite; }
+.evo-cut__motif { display: flex; flex: none; align-items: center; justify-content: center; gap: 12px; color: rgba(255,255,255,.34); font: 800 9px/1 ui-monospace, monospace; letter-spacing: .18em; opacity: 0; transform: translateY(8px); transition: opacity .6s ease, transform .6s ease; }
+.evo-cut__motif.is-active { opacity: 1; transform: none; }
+.evo-cut__motif-line { width: clamp(30px, 10vw, 110px); height: 1px; background: linear-gradient(90deg, transparent, var(--evo-accent), transparent); box-shadow: 0 0 10px var(--evo-accent); }
+.evo-cut__stage { position: relative; flex: none; width: clamp(210px, 38vh, 410px); max-width: 76vw; aspect-ratio: 1; margin: auto; isolation: isolate; }
+.evo-cut__stage::before { position: absolute; inset: 14%; border: 1px solid color-mix(in srgb, var(--evo-accent) 62%, transparent); border-radius: 50%; content: ''; box-shadow: 0 0 34px color-mix(in srgb, var(--evo-accent) 28%, transparent), inset 0 0 34px color-mix(in srgb, var(--evo-accent) 12%, transparent); opacity: .75; }
+.evo-cut__stage::after { position: absolute; z-index: 5; inset: 8%; border: 1px dashed color-mix(in srgb, var(--evo-accent) 40%, transparent); border-radius: 50%; content: ''; animation: evoOrbit 26s linear infinite; }
+.evo-cut__orbit { position: absolute; z-index: 1; left: 50%; top: 50%; width: 108%; height: 38%; border: 1px solid color-mix(in srgb, var(--evo-accent) 60%, transparent); border-radius: 50%; box-shadow: 0 0 20px color-mix(in srgb, var(--evo-accent) 28%, transparent); transform: translate(-50%, -50%) rotate(-28deg); }
+.evo-cut__orbit--two { width: 116%; height: 58%; border-color: color-mix(in srgb, var(--evo-accent) 28%, transparent); transform: translate(-50%, -50%) rotate(39deg); animation: evoOrbit 14s linear infinite reverse; }
+.evo-cut__seal { position: absolute; z-index: 4; left: 50%; top: 50%; color: var(--evo-accent); font-size: clamp(25px, 5vmin, 48px); text-shadow: 0 0 12px var(--evo-accent), 0 0 38px var(--evo-accent); transform: translate(-50%, -50%); animation: evoSeal 2.2s ease-in-out infinite; }
+.evo-cut__art { position: absolute; z-index: 2; inset: 11%; overflow: hidden; border: 1px solid color-mix(in srgb, var(--evo-accent) 75%, white); border-radius: 22px; background: #080810; box-shadow: 0 0 48px color-mix(in srgb, var(--evo-accent) 32%, transparent), 0 24px 90px #000c; transition: opacity .85s ease, transform 1.1s cubic-bezier(.2,.8,.2,1), filter .85s ease; }
+.evo-cut__art::after { position: absolute; inset: 0; background: linear-gradient(145deg, color-mix(in srgb, var(--evo-accent) 13%, transparent), transparent 55%, rgba(0,0,0,.32)); content: ''; mix-blend-mode: screen; }
+.evo-cut__art-media { width: 100%; height: 100%; object-fit: cover; }
+.evo-cut__art--before { opacity: 1; transform: scale(1); filter: saturate(.8) brightness(.8); }
+.evo-cut__art--after { opacity: 0; transform: scale(.72) rotate(5deg); filter: saturate(1.8) brightness(1.9) blur(10px); }
+.evo-cut__stage.is-revealed .evo-cut__art--before { opacity: 0; transform: scale(1.22) rotate(-3deg); filter: brightness(2.3) blur(8px); }
+.evo-cut__stage.is-revealed .evo-cut__art--after { opacity: 1; transform: scale(1) rotate(0); filter: saturate(1.15) brightness(1) blur(0); animation: evoNewArt 1s cubic-bezier(.2,1.15,.35,1) both; }
+.evo-cut__glyph { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; color: color-mix(in srgb, var(--evo-accent) 72%, white); font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: clamp(110px, 24vmin, 280px); text-shadow: 0 0 28px var(--evo-accent); }
+.evo-cut__stage-label { position: absolute; z-index: 6; left: 50%; bottom: 0; display: flex; width: max-content; max-width: 100%; flex-direction: column; align-items: center; gap: 3px; padding: 6px 12px; border: 1px solid color-mix(in srgb, var(--evo-accent) 36%, transparent); border-radius: 999px; background: rgba(2,3,10,.76); color: white; font-size: clamp(10px, 1.7vh, 15px); font-weight: 800; text-align: center; transform: translate(-50%, 55%); transition: opacity .55s ease; }
+.evo-cut__stage-label small { color: color-mix(in srgb, var(--evo-accent) 80%, white); font: 800 8px/1 ui-monospace, monospace; letter-spacing: .22em; }
+.evo-cut__stage-label--after { opacity: 0; }
+.evo-cut__stage.is-revealed .evo-cut__stage-label--before { opacity: 0; }
+.evo-cut__stage.is-revealed .evo-cut__stage-label--after { opacity: 1; }
+.evo-cut__copy { flex: none; min-height: clamp(100px, 16vh, 154px); text-align: center; }
+.evo-cut__narration { color: rgba(255,255,255,.57); font-size: clamp(11px, 1.8vh, 14px); line-height: 1.6; opacity: 0; transform: translateY(8px); transition: opacity .8s ease, transform .8s ease; }
+.evo-cut__narration.is-visible { opacity: 1; transform: none; }
+.evo-cut__quote { position: relative; width: min(100%, 840px); margin: 5px auto 0; opacity: 0; transform: translateY(18px) scale(.97); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1); }
+.evo-cut__quote.is-visible { opacity: 1; transform: none; }
+.evo-cut__quote-mark { position: absolute; left: 0; top: -28px; color: color-mix(in srgb, var(--evo-accent) 76%, white); font: 900 clamp(38px, 9vmin, 76px)/1 Georgia, serif; opacity: .7; }
+.evo-cut__quote p { margin: 0; color: white; font-family: "Noto Serif JP", "Yu Mincho", serif; font-size: clamp(16px, 3.2vh, 28px); font-weight: 900; line-height: 1.5; text-shadow: 0 2px 18px #000, 0 0 28px color-mix(in srgb, var(--evo-accent) 24%, transparent); }
+.evo-cut__quote-rule { display: block; width: min(50%, 240px); height: 1px; margin: 8px auto 0; background: linear-gradient(90deg, transparent, var(--evo-accent), transparent); }
+.evo-cut__name { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; color: color-mix(in srgb, var(--evo-accent) 78%, white); font: 800 9px/1.4 ui-monospace, monospace; letter-spacing: .13em; opacity: 0; transform: translateY(10px); transition: opacity .7s ease, transform .7s ease; }
+.evo-cut__name.is-visible { opacity: 1; transform: none; }
+.evo-cut__name strong { color: white; font: 900 clamp(15px, 2.5vh, 22px)/1.35 "Noto Serif JP", "Yu Mincho", serif; letter-spacing: .04em; }
+.evo-cut__footer { flex: none; border-top: 1px solid rgba(255,255,255,.12); padding-top: 8px; }
+.evo-cut__timeline { display: flex; justify-content: center; gap: 5px; }
+.evo-cut__timeline i { width: clamp(24px, 8vw, 70px); height: 2px; background: rgba(255,255,255,.14); transition: background .4s, box-shadow .4s; }
+.evo-cut__timeline i.is-lit { background: var(--evo-accent); box-shadow: 0 0 12px var(--evo-accent); }
+.evo-cut__footer-row { display: flex; min-height: 32px; align-items: center; justify-content: space-between; gap: 8px; margin-top: 5px; color: rgba(255,255,255,.48); font: 800 9px/1.2 ui-monospace, monospace; letter-spacing: .12em; }
+.evo-cut__finish { border: 1px solid color-mix(in srgb, var(--evo-accent) 70%, white); border-radius: 999px; padding: 8px 14px; background: color-mix(in srgb, var(--evo-accent) 20%, #080812); color: white; font-family: inherit; font-size: 11px; font-weight: 900; line-height: 1.2; letter-spacing: .04em; box-shadow: 0 0 22px color-mix(in srgb, var(--evo-accent) 28%, transparent); animation: evoFinishPulse 1.5s ease-in-out infinite; }
+.evo-cut__finish b { padding-left: 5px; color: var(--evo-accent); }
+.evo-cut--inferno .evo-cut__backdrop { background: radial-gradient(ellipse at 50% 100%, rgba(255,61,13,.25), transparent 48%), radial-gradient(ellipse at 50% 35%, rgba(255,147,34,.22), transparent 54%), #070309; }
+.evo-cut--afterglow .evo-cut__backdrop { background: radial-gradient(ellipse at 50% 84%, rgba(255,191,130,.25), transparent 54%), linear-gradient(180deg, #10101b 0%, #22162a 52%, #100d18 100%); }
+.evo-cut--starfall .evo-cut__contours { opacity: .5; background: radial-gradient(circle at 22% 32%, #fff 0 1px, transparent 2px), radial-gradient(circle at 76% 57%, #e0f7ff 0 1px, transparent 2px), radial-gradient(circle at 58% 13%, #fff 0 2px, transparent 3px); background-size: 75px 83px, 113px 109px, 137px 127px; animation: evoStarfield 18s linear infinite; }
+.evo-cut--contour .evo-cut__contours { opacity: .44; }
+.evo-cut--court-pass .evo-cut__rays { background: repeating-conic-gradient(from 0deg at 50% 50%, transparent 0deg 17deg, rgba(139,220,255,.32) 17.4deg 17.8deg, transparent 18.2deg 34deg); animation-duration: 17s; }
+.evo-cut--phase-break .evo-cut__grid { opacity: .3; animation: evoGridGlitch 3s steps(2) infinite; }
+.evo-cut--phase-break .evo-cut__contours { opacity: .4; background: repeating-linear-gradient(0deg, transparent 0 14px, rgba(255,50,94,.35) 15px 16px, transparent 17px 31px); animation: evoPhaseScan 2.3s steps(2) infinite; }
+.evo-cut--strata-memory .evo-cut__contours { top: auto; height: 65%; opacity: .42; background: repeating-linear-gradient(0deg, transparent 0 18px, rgba(202,148,95,.58) 19px 21px, rgba(81,47,36,.32) 22px 31px); mask-image: linear-gradient(0deg, #000, transparent); }
+@keyframes evoContourShift { 0%, 100% { transform: scale(1) translate(0); } 50% { transform: scale(1.08) translate(-1%, 1%); } }
+@keyframes evoRayTurn { to { transform: rotate(360deg); } }
+@keyframes evoParticleRise { 0% { transform: translateY(0) rotate(0); opacity: 0; } 12%, 78% { opacity: .72; } 100% { transform: translateY(-115vh) rotate(28deg); opacity: 0; } }
+@keyframes evoFlash { 0% { opacity: 0; } 12% { opacity: .95; } 42% { opacity: .2; } 100% { opacity: 0; } }
+@keyframes evoOrbit { to { transform: rotate(360deg); } }
+@keyframes evoSeal { 0%, 100% { opacity: .5; transform: translate(-50%,-50%) scale(.8); } 50% { opacity: 1; transform: translate(-50%,-50%) scale(1.25); } }
+@keyframes evoNewArt { 0% { filter: brightness(2.5) saturate(1.5); } 100% { filter: brightness(1) saturate(1.15); } }
+@keyframes evoStatus { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+@keyframes evoFinishPulse { 0%,100% { transform: scale(1); box-shadow: 0 0 16px color-mix(in srgb, var(--evo-accent) 20%, transparent); } 50% { transform: scale(1.035); box-shadow: 0 0 30px color-mix(in srgb, var(--evo-accent) 48%, transparent); } }
+@keyframes evoStarfield { to { background-position: 80px 110px, -95px 85px, 60px -120px; } }
+@keyframes evoGridGlitch { 0%, 100% { transform: perspective(650px) rotateX(56deg) scale(1.8) translateY(18%); filter: none; } 50% { transform: perspective(650px) rotateX(55deg) scale(1.82) translate(1%,17%); filter: hue-rotate(70deg); } }
+@keyframes evoPhaseScan { 0%,100% { transform: translateY(-6%); opacity: .2; } 50% { transform: translateY(8%); opacity: .55; } }
+
+@media (max-height: 680px) {
+  .evo-cut__frame { gap: 6px; padding-top: 10px; padding-bottom: 10px; }
+  .evo-cut__stage { width: clamp(180px, 33vh, 280px); }
+  .evo-cut__copy { min-height: 90px; }
+}
+@media (max-width: 480px) {
+  .evo-cut__eyebrow { font-size: 8px; letter-spacing: .12em; }
+  .evo-cut__status { font-size: 7px; }
+  .evo-cut__stage { width: clamp(200px, 40vh, 330px); max-width: 72vw; }
+  .evo-cut__footer-row { font-size: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .unit-evo-fx *, .evo-cut *, .evo-cut::before, .evo-cut::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .unit-evo-fx__glint { opacity: .18; }
+}

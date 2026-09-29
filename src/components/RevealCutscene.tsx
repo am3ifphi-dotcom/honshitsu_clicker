@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import type { PullResult, Rarity, UnitDef } from '../game/types';
-import { UNIT_MAP } from '../game/data/units';
+import { getUnitForm, UNIT_MAP } from '../game/data/units';
+import { useGame } from '../game/store';
 import { rarityRank } from '../game/formulas';
-import { RarityBadge, TypeBadge } from './ui';
+import { EvolutionAura, RarityBadge, TypeBadge } from './ui';
 import { sfx } from '../utils/sfx';
 
 // ───────── タイミング（ms） ─────────
@@ -24,6 +25,16 @@ interface Theme {
 }
 
 function themeOf(r: Rarity): Theme {
+  if (r === 'EX')
+    return {
+      bg: 'radial-gradient(circle at 50% 32%, rgba(34,211,238,0.32), rgba(21,8,38,0.97) 62%)',
+      halo: 'conic-gradient(#22d3ee, #a78bfa, #fb7185, #fff, #22d3ee)',
+      glow: '0 0 65px rgba(34,211,238,0.82), 0 0 170px rgba(167,139,250,0.52)',
+      ring: 'rgba(103,232,249,0.94)',
+      sigil: '✧',
+      vignette: 'radial-gradient(circle at 50% 45%, transparent 42%, rgba(76,29,149,0.46) 78%, rgba(0,0,0,0.94) 100%)',
+      heavy: true,
+    };
   if (r === 'LR')
     return {
       bg: 'radial-gradient(circle at 50% 32%, rgba(220,38,38,0.34), rgba(8,2,2,0.97) 62%)',
@@ -264,6 +275,7 @@ export default function RevealCutscene({ items, onDone }: { items: PullResult[] 
   const [nameText, setNameText] = useState('');
   const [quoteText, setQuoteText] = useState('');
   const [prevItems, setPrevItems] = useState(items);
+  const evolvedUnits = useGame((s) => s.evolvedUnits);
   const stageRef = useRef(0);
   stageRef.current = stage;
 
@@ -275,7 +287,12 @@ export default function RevealCutscene({ items, onDone }: { items: PullResult[] 
 
   const results = useMemo(() => (items ?? []).filter((r) => UNIT_MAP[r.id]), [items]);
   const item = results[Math.min(idx, Math.max(0, results.length - 1))];
-  const def: UnitDef | undefined = item ? UNIT_MAP[item.id] : undefined;
+  const currentUnitId = item?.id;
+  const itemEvolved = !!(currentUnitId && evolvedUnits?.[currentUnitId]);
+  const def: UnitDef | undefined = useMemo(
+    () => (currentUnitId ? getUnitForm(currentUnitId, itemEvolved) : undefined),
+    [currentUnitId, itemEvolved],
+  );
 
   const advance = useCallback(() => {
     if (idx + 1 >= results.length) onDone();
@@ -408,10 +425,10 @@ export default function RevealCutscene({ items, onDone }: { items: PullResult[] 
             {th.sigil}
           </div>
           <div
-            className={`rc-rarity mt-2 bg-gradient-to-r bg-clip-text font-display text-transparent ${rank >= 5 ? 'from-red-400 via-white to-red-500' : rank >= 4 ? 'from-fuchsia-300 via-white to-sky-300' : 'from-yellow-200 via-amber-300 to-orange-500'}`}
+            className={`rc-rarity mt-2 bg-gradient-to-r bg-clip-text font-display text-transparent ${rank >= 6 ? 'from-cyan-200 via-white to-rose-300' : rank >= 5 ? 'from-red-400 via-white to-red-500' : rank >= 4 ? 'from-fuchsia-300 via-white to-sky-300' : 'from-yellow-200 via-amber-300 to-orange-500'}`}
             style={{ fontSize: 'min(16vmin, 120px)', textShadow: '0 4px 30px rgba(0,0,0,0.5)' }}
           >
-            {rank >= 5 ? '✝LR✝' : def.rarity}
+            {rank >= 6 ? 'EX' : rank >= 5 ? '✝LR✝' : def.rarity}
           </div>
         </div>
       )}
@@ -430,6 +447,7 @@ export default function RevealCutscene({ items, onDone }: { items: PullResult[] 
           >
             {/* 画像本体（ケンバーンズ） */}
             <div className="rc-kenburns absolute inset-0">{art('h-full w-full object-cover')}</div>
+            {def.evolutionEffect && <EvolutionAura effect={def.evolutionEffect} />}
 
             {/* カラーゴースト（UR/LR・縁だけ色ズレる） */}
             {heavy && def.portrait && (
@@ -534,13 +552,17 @@ export default function RevealCutscene({ items, onDone }: { items: PullResult[] 
       )}
 
       {/* ── 浮遊フレーバー ── */}
-      <FloatingGlyphs words={flavor.words} symbol={th.sigil} color={rank >= 5 ? '#f87171' : rank >= 4 ? '#e9d5ff' : '#fde68a'} />
-      {heavy && <Confetti colors={rank >= 5 ? ['#ef4444', '#fff', '#7f1d1d', '#fca5a5'] : ['#f472b6', '#facc15', '#4ade80', '#38bdf8', '#a78bfa']} />}
-      {rank >= 5 && (
+      <FloatingGlyphs words={flavor.words} symbol={th.sigil} color={rank >= 6 ? '#67e8f9' : rank >= 5 ? '#f87171' : rank >= 4 ? '#e9d5ff' : '#fde68a'} />
+      {heavy && <Confetti colors={rank >= 6 ? ['#22d3ee', '#a78bfa', '#fb7185', '#fff'] : rank >= 5 ? ['#ef4444', '#fff', '#7f1d1d', '#fca5a5'] : ['#f472b6', '#facc15', '#4ade80', '#38bdf8', '#a78bfa']} />}
+      {rank >= 6 ? (
+        <div className="rc-flicker pointer-events-none absolute inset-x-0 top-[12%] text-center font-display text-lg tracking-[0.3em] text-cyan-100/90" style={{ textShadow: '0 0 24px rgba(34,211,238,0.95)' }}>
+          EX — EVOLVED FORM
+        </div>
+      ) : rank >= 5 ? (
         <div className="rc-flicker pointer-events-none absolute inset-x-0 top-[12%] text-center font-display text-lg text-red-200/80" style={{ textShadow: '0 0 20px rgba(239,68,68,0.9)' }}>
           存在しないが、ある
         </div>
-      )}
+      ) : null}
       {flavor.layer === 'glint' && <div className="pointer-events-none absolute right-[18%] top-[22%] h-3 w-3 rounded-full bg-white shadow-[0_0_24px_8px_rgba(255,255,255,0.9)] rc-glowpulse" />}
 
       {/* ── 操作 ── */}

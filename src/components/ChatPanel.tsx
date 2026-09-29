@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGame } from '../game/store';
 import { SPEAKERS } from '../game/data/chatter';
-import { UNIT_MAP } from '../game/data/units';
+import { getUnitForm, UNIT_MAP } from '../game/data/units';
 import type { ChatMsg } from '../game/types';
 
-function Msg({ m }: { m: ChatMsg }) {
+function Msg({ m, evolvedUnits }: { m: ChatMsg; evolvedUnits: Record<string, boolean> }) {
   const sp = SPEAKERS[m.s] || SPEAKERS.sys;
   if (m.s === 'sys' || m.s === 'narr') {
     return <div className="anim-fadein mx-auto max-w-[92%] rounded-full bg-white/5 px-3 py-1 text-center text-[11px] text-slate-400">{m.t}</div>;
   }
   const mine = m.s === 'you';
-  const unit = sp.unit ? UNIT_MAP[sp.unit] : undefined;
+  const unit = sp.unit ? getUnitForm(sp.unit, !!evolvedUnits?.[sp.unit]) : undefined;
   return (
     <div className={`anim-fadein flex items-start gap-1.5 ${mine ? 'flex-row-reverse' : ''}`}>
       {unit?.portrait ? (
@@ -33,6 +33,7 @@ function Msg({ m }: { m: ChatMsg }) {
 export default function ChatPanel({ onClose }: { onClose?: () => void }) {
   const chat = useGame((s) => s.chat);
   const units = useGame((s) => s.units);
+  const evolvedUnits = useGame((s) => s.evolvedUnits);
   const boxRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState('');
   const members = Object.keys(units).filter((id) => UNIT_MAP[id]?.speaker).length + 1;
@@ -64,7 +65,7 @@ export default function ChatPanel({ onClose }: { onClose?: () => void }) {
       </div>
       <div ref={boxRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
         {chat.map((m) => (
-          <Msg key={m.id} m={m} />
+          <Msg key={m.id} m={m} evolvedUnits={evolvedUnits} />
         ))}
       </div>
       <form

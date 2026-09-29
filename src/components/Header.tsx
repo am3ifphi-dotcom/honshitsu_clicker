@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useGame } from '../game/store';
 import { derive, devTier, gradeName, xpToNext, spTotal, spSpent } from '../game/formulas';
 import { fmt } from '../game/format';
-import { Bar, Btn } from './ui';
+import { Bar } from './ui';
 import LoginBonusModal from './LoginBonusModal';
 import UpdateGiftModal from './UpdateGiftModal';
 
