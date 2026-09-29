@@ -13,6 +13,8 @@ import { NODE_MAP, PRESTIGE_MAP, ULTRA_PRESTIGE_MAP } from './data/skills';
 import { ACHIEVEMENTS } from './data/achievements';
 import { DEV_EVENTS, DEV_THRESHOLDS, FACILITY_EVENTS, replyTo } from './data/chatter';
 import { getUnitAwakenings, CRYSTAL_SHOP } from './data/awakening';
+import { CHAPTERS } from './data/story';
+import { SCHOOLS } from './data/league';
 import { fmt } from './format';
 
 const SAVE_KEY = 'honshitsu-leak-save-v1';
@@ -225,12 +227,108 @@ function fromB64(b64: string) {
   return new TextDecoder().decode(bytes);
 }
 
+function debugAmount(value: unknown, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : fallback;
+}
+
+// 開発用の手動コマンド。コンソールへコマンド一覧・ヘルプ・実装内容は出力しない。
+function setupDebugCommands(set: any, get: any) {
+  // Dev builds only: the browser bundle is inspectable, so never ship cheats to production.
+  if (!import.meta.env.DEV || typeof window === 'undefined') return;
+
+  const commands = {
+    addHonshitsu: (n = 1e30) => {
+      const amount = debugAmount(n, 1e30);
+      set((s: GameData) => ({ honshitsu: s.honshitsu + amount, totalEarned: s.totalEarned + amount, allTimeEarned: s.allTimeEarned + amount }));
+    },
+    addCans: (n = 1000) => {
+      const amount = debugAmount(n, 1000);
+      set((s: GameData) => ({ cans: s.cans + amount }));
+    },
+    addCrystals: (n = 500) => {
+      const amount = debugAmount(n, 500);
+      set((s: GameData) => ({ crystals: s.crystals + amount, totalCrystals: s.totalCrystals + amount }));
+    },
+    addCores: (n = 50) => {
+      const amount = debugAmount(n, 50);
+      set((s: GameData) => ({ cores: s.cores + amount, totalCores: s.totalCores + amount }));
+    },
+    addTickets: (n = 100) => {
+      const amount = debugAmount(n, 100);
+      set((s: GameData) => ({ items: { ...s.items, ticket: (s.items.ticket || 0) + amount } }));
+    },
+    addMemories: (n = 100) => {
+      const amount = debugAmount(n, 100);
+      set((s: GameData) => ({ memories: s.memories + amount, totalMemories: s.totalMemories + amount }));
+    },
+    addEvolutionMaterial: (materialOrUnitId: string, n = 3) => {
+      const form = EVOLUTION_FORMS[materialOrUnitId] ?? Object.values(EVOLUTION_FORMS).find((candidate) => candidate.cost.materialId === materialOrUnitId);
+      if (!form) return;
+      const amount = debugAmount(n, 3);
+      set((s: GameData) => ({ items: { ...s.items, [form.cost.materialId]: (s.items[form.cost.materialId] || 0) + amount } }));
+    },
+    addEvolutionMaterials: (n = 3) => {
+      const amount = debugAmount(n, 3);
+      set((s: GameData) => {
+        const items = { ...s.items };
+        for (const form of Object.values(EVOLUTION_FORMS)) items[form.cost.materialId] = (items[form.cost.materialId] || 0) + amount;
+        return { items };
+      });
+    },
+    setDev: (dev = 150) => {
+      const parsed = Number(dev);
+      if (!Number.isFinite(parsed)) return;
+      const value = Math.max(0, parsed);
+      set((s: GameData) => ({ maxDev: value, bestDev: Math.max(s.bestDev, value) }));
+    },
+    maxAllUnits: () => {
+      const s = get();
+      const units: Record<string, OwnedUnit> = {};
+      for (const def of UNITS) units[def.id] = { level: 1, star: 0, equip: s.units[def.id]?.equip ?? null };
+      const withAllUnits = { ...s, units };
+      const maxStar = getMaxStar(computeMods(withAllUnits));
+      for (const u of Object.values(units)) u.star = maxStar;
+      const mods = computeMods({ ...s, units });
+      for (const u of Object.values(units)) u.level = levelCap(u, mods);
+      set({ units });
+    },
+    unlockAllUnits: () => {
+      const units: Record<string, OwnedUnit> = { ...get().units };
+      for (const def of UNITS) if (!units[def.id]) units[def.id] = { level: 1, star: 0, equip: null };
+      set({ units });
+    },
+    awakenAll: () => {
+      const awakening = Object.fromEntries(UNITS.map((def) => [def.id, getUnitAwakenings(def.id).length]));
+      set({ awakening });
+    },
+    unlockAllStory: () => {
+      set({
+        story: Object.fromEntries(CHAPTERS.map((chapter) => [chapter.id, true])),
+        league: Object.fromEntries(SCHOOLS.map((school) => [school.id, true])),
+        endless: Math.max(get().endless, 100),
+      });
+    },
+    triggerGolden: () => {
+      const now = Date.now();
+      set({ golden: { id: now, x: 45, y: 40, until: now + 20000 } });
+    },
+    clearSave: () => {
+      try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+      window.location.reload();
+    },
+  };
+
+  Object.defineProperty(window, 'hdebug', { value: commands, configurable: true });
+}
+
 export const useGame = create<GameStore>()((set, get) => ({
   ...fresh(),
 
   init: () => {
     if (initialized) return 0;
     initialized = true;
+    setupDebugCommands(set, get);
     let offlineGain = 0;
     try {
       const raw = localStorage.getItem(SAVE_KEY);
