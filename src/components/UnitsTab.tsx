@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../game/store';
 import { computeMods, derive, levelCap, powerToDev, rarityRank, unitLevelCost, unitStats, RARITIES, TYPES, getMaxStar } from '../game/formulas';
 import { UNITS, UNIT_MAP, getUnitForm } from '../game/data/units';
-import { EVOLUTION_FORMS } from '../game/data/evolutions';
+import { EVOLUTION_FORMS, EVOLUTION_MATERIAL_SOURCES } from '../game/data/evolutions';
 import { ITEM_MAP, EQUIPS } from '../game/data/items';
 import { getUnitAwakenings, BOND_VOICES, CRYSTAL_SHOP } from '../game/data/awakening';
 import type { Rarity, UnitType } from '../game/types';
@@ -342,6 +342,7 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const bond = s.bonds[id] || { exp: 0, lv: 1 };
   const evolutionMaterial = evolution ? ITEM_MAP[evolution.cost.materialId] : undefined;
   const evolutionMaterialCount = evolution ? (s.items[evolution.cost.materialId] || 0) : 0;
+  const evolutionMaterialSource = evolution ? EVOLUTION_MATERIAL_SOURCES[evolution.cost.materialId] : undefined;
   const evolutionCanPay = !!evolution && s.cans >= evolution.cost.cans && s.crystals >= evolution.cost.crystals && s.cores >= evolution.cost.cores && s.memories >= evolution.cost.memories && evolutionMaterialCount >= evolution.cost.materialCount;
   const canEvolve = !!evolution && !evolved && u.star >= maxStar && evolutionCanPay;
   const iconDef = evolved && showBefore && baseDef ? baseDef : def;
@@ -452,7 +453,10 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
                       <span className={s.memories >= evolution.cost.memories ? 'text-emerald-300' : 'text-rose-300'}>🌏 {s.memories.toLocaleString()}/{evolution.cost.memories}</span>
                       <span className={evolutionMaterialCount >= evolution.cost.materialCount ? 'text-emerald-300' : 'text-rose-300'}>{evolutionMaterial?.emoji ?? '✦'} {evolutionMaterialCount}/{evolution.cost.materialCount} {evolutionMaterial?.name ?? '専用素材'}</span>
                     </div>
-                    <div className="relative mt-1 text-[10px] text-slate-400">専用素材は関連バトル初回勝利で1個確定、再戦でもドロップします。</div>
+                    <div className="relative mt-1.5 rounded-lg border border-cyan-300/30 bg-cyan-500/10 px-2 py-1.5 text-[10px] leading-tight">
+                      <div className="font-bold text-cyan-200">📍 {evolutionMaterial?.name ?? '専用素材'} の入手先：{evolutionMaterialSource ? `${evolutionMaterialSource.mode} ${evolutionMaterialSource.short}『${evolutionMaterialSource.title}』` : '関連バトル'}</div>
+                      <div className="mt-0.5 text-slate-300">初回勝利で1個確定、再戦で基本18%ドロップ（ドロップ率ボーナスで最大80%）。ストーリータブから挑戦できます。</div>
+                    </div>
                     <Btn variant={canEvolve ? 'gold' : 'ghost'} disabled={!canEvolve} className="relative mt-3 w-full" onClick={() => setShowEvolution(true)}>
                       ✦ 固有CG演出を開始してEXへ進化
                     </Btn>

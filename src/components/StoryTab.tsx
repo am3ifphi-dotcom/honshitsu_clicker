@@ -133,6 +133,12 @@ export default function StoryTab() {
                           {' ・SP+1'}
                         </div>
                       )}
+                      {unlocked && evoDrop && (
+                        <div className="mt-1.5 inline-flex flex-wrap items-center gap-1 rounded-lg border border-cyan-300/40 bg-cyan-500/15 px-2 py-1 text-[10px] font-bold text-cyan-100">
+                          ✦ 進化素材ドロップ：{evoDrop.emoji} {evoDrop.name}
+                          <span className="font-normal text-cyan-200/80">（初回勝利で1個確定・再戦で18%〜ドロップ）</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   {unlocked && (
