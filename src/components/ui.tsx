@@ -53,27 +53,207 @@ export function UnitIcon({ def, size = 56, dim = false, className = '' }: { def:
   );
 }
 
-export function EvolutionAura({ effect, active = true }: { effect: NonNullable<UnitDef['evolutionEffect']>; active?: boolean }) {
-  const flameId = useId();
+type ExEffect = NonNullable<UnitDef['evolutionEffect']>;
+
+/** One flame tongue along the bottom edge of the icon frame. */
+const flameTongue = (cx: number, h: number, hw: number, lean: number) =>
+  `M${cx - hw} 108 C ${cx - hw - 2} ${108 - h * 0.42} ${cx - hw * 0.45} ${108 - h * 0.68} ${cx + lean} ${108 - h} C ${cx + lean + hw * 0.42} ${108 - h * 0.7} ${cx + hw + 3} ${108 - h * 0.32} ${cx + hw} 108 Z`;
+
+function InfernoScene({ uid }: { uid: string }) {
+  const back: [number, number, number, number][] = [[6, 34, 9, 3], [20, 46, 10, -3], [34, 38, 9, 2], [50, 54, 11, 0], [66, 38, 9, -2], [80, 46, 10, 3], [94, 33, 9, -3]];
+  const front: [number, number, number, number][] = [[13, 24, 6.5, -2], [31, 28, 7, 2], [50, 30, 7.5, 0], [69, 27, 7, -2], [87, 23, 6.5, 2]];
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${uid}fO`} x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stopColor="#ff2705" />
+          <stop offset=".48" stopColor="#ff7c1e" />
+          <stop offset=".84" stopColor="#ffcd5e" />
+          <stop offset="1" stopColor="#fff7c8" />
+        </linearGradient>
+        <linearGradient id={`${uid}fI`} x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stopColor="#ff9500" />
+          <stop offset=".55" stopColor="#ffd978" />
+          <stop offset="1" stopColor="#fffef2" />
+        </linearGradient>
+        <radialGradient id={`${uid}coal`} cx=".5" cy="1" r=".95">
+          <stop offset="0" stopColor="#fff3c0" />
+          <stop offset=".45" stopColor="#ffab3d" stopOpacity=".85" />
+          <stop offset="1" stopColor="#ff5a00" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <ellipse className="ex-coals" cx="50" cy="106" rx="54" ry="20" fill={`url(#${uid}coal)`} />
+      <g className="ex-flames ex-flames--back">
+        {back.map(([x, h, hw, lean], i) => (
+          <path key={i} className="ex-flame ex-flame--back" style={{ '--n': i } as CSSProperties} d={flameTongue(x, h, hw, lean)} fill={`url(#${uid}fO)`} />
+        ))}
+      </g>
+      {[24, 50, 76].map((x, i) => (
+        <path key={i} className="ex-lick" style={{ '--n': i } as CSSProperties} pathLength={78} d={`M${x} 106 C ${x - 11} 84 ${x + 9} 70 ${x - 2} 46`} />
+      ))}
+      <g className="ex-flames ex-flames--front">
+        {front.map(([x, h, hw, lean], i) => (
+          <path key={i} className="ex-flame ex-flame--front" style={{ '--n': i } as CSSProperties} d={flameTongue(x, h, hw, lean)} fill={`url(#${uid}fI)`} />
+        ))}
+      </g>
+    </>
+  );
+}
+
+/** 数理零：夕陽の黒板に数式が刻まれていく。巨大なΣを残照に、チョークの式が明滅する。 */
+function AfterglowScene() {
+  const formulas: [number, number, string][] = [
+    [46, 18, '∫ f(x)dx'],
+    [7, 32, 'lim ε→0'],
+    [62, 81, 'Σ xᵢ²'],
+    [10, 76, 'dy/dt'],
+    [84, 47, '∞'],
+  ];
+  return (
+    <>
+      <path className="ex-axes" d="M13 89 H93 M13 89 V11" />
+      <text className="ex-axiom" x="50" y="74" textAnchor="middle">∑</text>
+      <path className="ex-plot ex-plot--para" pathLength={240} d="M21 14 Q50 86 79 14" />
+      <path className="ex-plot ex-plot--sine" pathLength={240} d="M9 56 Q22 39 35 56 T61 56 T87 56" />
+      <g className="ex-formulas">
+        {formulas.map(([x, y, t], i) => (
+          <text key={i} x={x} y={y} style={{ '--n': i } as CSSProperties}>{t}</text>
+        ))}
+      </g>
+    </>
+  );
+}
+
+function StarfallScene({ uid }: { uid: string }) {
+  const points: [number, number, number][] = [[20, 26, 1], [41, 47, 0.72], [32, 76, 0.84], [61, 59, 1.2], [80, 83, 0.7], [72, 37, 0.95]];
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${uid}cmA`} gradientUnits="userSpaceOnUse" x1="124" y1="-10" x2="-24" y2="96">
+          <stop offset="0" stopColor="#cfe6ff" stopOpacity="0" />
+          <stop offset=".65" stopColor="#cfe6ff" />
+          <stop offset="1" stopColor="#ffffff" />
+        </linearGradient>
+        <linearGradient id={`${uid}cmB`} gradientUnits="userSpaceOnUse" x1="-16" y1="14" x2="84" y2="126">
+          <stop offset="0" stopColor="#c5ddff" stopOpacity="0" />
+          <stop offset=".65" stopColor="#c5ddff" />
+          <stop offset="1" stopColor="#ffffff" />
+        </linearGradient>
+      </defs>
+      <ellipse className="ex-starmap" cx="50" cy="50" rx="64" ry="20" transform="rotate(-24 50 50)" />
+      <path className="ex-web" pathLength={200} d="M20 26 L41 47 M41 47 L32 76 M41 47 L61 59 M61 59 L80 83 M61 59 L72 37" />
+      {points.map(([x, y, s], i) => (
+        <g key={i} transform={`translate(${x} ${y}) scale(${s})`}>
+          <path className="ex-starpt" style={{ '--n': i } as CSSProperties} d="M0 -5.5 L1.4 -1.4 L5.5 0 L1.4 1.4 L0 5.5 L-1.4 1.4 L-5.5 0 L-1.4 -1.4 Z" />
+        </g>
+      ))}
+      <path className="ex-comet" pathLength={260} d="M124 -10 L-24 96" stroke={`url(#${uid}cmA)`} />
+      <path className="ex-comet ex-comet--b" pathLength={260} d="M-16 14 L84 126" stroke={`url(#${uid}cmB)`} />
+    </>
+  );
+}
+
+function ContourScene() {
+  return (
+    <>
+      <g className="ex-ridge">
+        <path className="ex-ridge__line" style={{ '--n': 0 } as CSSProperties} d="M22 82 C 8 70 10 48 24 37 C 39 25 60 29 67 44 C 74 59 66 76 51 82 C 39 87 30 89 22 82 Z" />
+        <path className="ex-ridge__line" style={{ '--n': 1 } as CSSProperties} d="M30 75 C 21 67 22 52 31 45 C 41 37 55 40 60 50 C 65 60 60 71 50 75 C 42 79 36 80 30 75 Z" />
+        <path className="ex-ridge__line ex-ridge__core" style={{ '--n': 2 } as CSSProperties} d="M38 68 C 32 63 33 54 39 50 C 45 46 53 48 56 54 C 59 60 55 67 49 69 C 45 71 41 71 38 68 Z" />
+        <path className="ex-ridge__line" style={{ '--n': 1 } as CSSProperties} d="M64 34 C 62 26 68 19 76 18 C 84 17 91 23 91 30 C 91 36 84 41 76 41 C 70 41 66 39 64 34 Z" />
+        <path className="ex-ridge__line ex-ridge__core" style={{ '--n': 2 } as CSSProperties} d="M72 33 C 71 29 74 25 78 25 C 82 25 85 28 85 31 C 85 34 81 37 77 36 C 74 36 73 35 72 33 Z" />
+        <path className="ex-ridge__sweep" pathLength={240} d="M22 82 C 8 70 10 48 24 37 C 39 25 60 29 67 44 C 74 59 66 76 51 82 C 39 87 30 89 22 82 Z" />
+      </g>
+      <path className="ex-seismo" pathLength={240} d="M0 92 H22 L30 82 L38 99 L45 86 L51 92 H100" />
+      <path className="ex-summit" d="M78 10.5 l4.5 7.5 h-9 Z" />
+      <text className="ex-summit-label" x="67" y="9">1620</text>
+    </>
+  );
+}
+
+function CourtPassScene() {
+  return (
+    <>
+      <g className="ex-courtlines">
+        <path d="M-6 60 L106 32" />
+        <path d="M-6 78 L106 50" />
+        <path d="M-6 42 L106 14" />
+      </g>
+      <path className="ex-trajectory" d="M-14 86 Q40 42 116 10" />
+      <path className="ex-trajectory ex-trajectory--pulse" pathLength={240} d="M-14 86 Q40 42 116 10" />
+      <path className="ex-speedline" d="M6 58 h24 M32 70 h16" />
+      <g transform="translate(-14 86)">
+        <g className="ex-ballsquad">
+          <circle className="ex-ballglow" r="11" />
+          <circle className="ex-ball" r="6.5" />
+          <path className="ex-ballseam" d="M-5 -2 Q 0 1.5 5 -1 M-4 3.5 Q 0 5.5 4 3.5" />
+        </g>
+      </g>
+    </>
+  );
+}
+
+function PhaseBreakScene() {
+  const shards: [number, number, number, number][] = [[-16, 13, 74, 6], [42, 33, 78, 3], [-34, 54, 92, 7], [26, 79, 66, 4]];
+  return (
+    <>
+      <g className="ex-shards">
+        {shards.map(([x, y, w, h], i) => (
+          <rect key={i} className={`ex-shard ${i % 2 ? 'ex-shard--cyan' : ''}`} style={{ '--n': i } as CSSProperties} x={x} y={y} width={w} height={h} />
+        ))}
+      </g>
+      <path className="ex-rift" d="M-6 40 H58 L46 62 H108" />
+      <path className="ex-rift ex-rift--echo" d="M-6 40 H58 L46 62 H108" />
+      <rect className="ex-scanband" x="0" y="-24" width="100" height="12" />
+      <g className="ex-corners">
+        <path d="M10 16 V10 H16" />
+        <path d="M90 84 V90 H84" />
+      </g>
+    </>
+  );
+}
+
+function StrataScene({ uid }: { uid: string }) {
+  return (
+    <>
+      <defs>
+        <radialGradient id={`${uid}mag`} cx=".5" cy="1" r=".9">
+          <stop offset="0" stopColor="#ffcf7d" stopOpacity=".9" />
+          <stop offset=".5" stopColor="#c97f3d" stopOpacity=".45" />
+          <stop offset="1" stopColor="#c97f3d" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <ellipse className="ex-magma" cx="50" cy="116" rx="60" ry="30" fill={`url(#${uid}mag)`} />
+      <g className="ex-bands">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <path key={i} className={`ex-band ${i % 2 ? 'ex-band--dark' : ''}`} style={{ '--n': i } as CSSProperties}
+            d={`M-40 ${56 + i * 11} C 0 ${50 + i * 11} 30 ${63 + i * 11} 62 ${57 + i * 11} C 90 ${52 + i * 11} 118 ${61 + i * 11} 150 ${56 + i * 11}`} />
+        ))}
+      </g>
+      <path className="ex-fossil" d="M51 22 C 60 23 66 32 63 41 C 60 50 48 53 41 47 C 35 41 36 31 43 28 C 49 25 56 28 57 35 C 58 41 53 45 48 43 C 45 41 44 37 47 34" />
+      <path className="ex-veinflow" pathLength={240} d="M4 99 L27 77 L42 83 L59 59 L73 64 L106 30" />
+    </>
+  );
+}
+
+export function EvolutionAura({ effect, active = true }: { effect: ExEffect; active?: boolean }) {
+  const uid = useId();
   return (
     <div className={`unit-evo-fx unit-evo-fx--${effect} ${active ? 'is-active' : ''}`} aria-hidden="true">
-      <span className="unit-evo-fx__layer unit-evo-fx__layer--one" />
-      <span className="unit-evo-fx__layer unit-evo-fx__layer--two" />
-      <span className="unit-evo-fx__glint" />
+      <span className="unit-evo-fx__wash" />
+      <span className="unit-evo-fx__depth" />
+      <svg className="unit-evo-fx__scene" viewBox="0 0 100 100" fill="none">
+        {effect === 'inferno' && <InfernoScene uid={uid} />}
+        {effect === 'afterglow' && <AfterglowScene />}
+        {effect === 'starfall' && <StarfallScene uid={uid} />}
+        {effect === 'contour' && <ContourScene />}
+        {effect === 'court-pass' && <CourtPassScene />}
+        {effect === 'phase-break' && <PhaseBreakScene />}
+        {effect === 'strata-memory' && <StrataScene uid={uid} />}
+      </svg>
       <span className="unit-evo-fx__corona" />
-      <svg className="unit-evo-fx__signature" viewBox="0 0 100 100" fill="none">
-        {effect === 'inferno' && <defs><linearGradient id={flameId} x1="0" y1="1" x2=".2" y2="0"><stop stopColor="#ff3514" stopOpacity=".15" /><stop offset=".4" stopColor="#ff7027" stopOpacity=".8" /><stop offset=".85" stopColor="#ffcf70" /><stop offset="1" stopColor="#fff2b4" stopOpacity=".2" /></linearGradient></defs>}
-        {effect === 'inferno' ? Array.from({ length: 7 }, (_, i) => <path key={i} className="ex-flame" style={{ '--n': i, fill: `url(#${flameId})` } as CSSProperties} d={`M${i * 17 - 9} 108 Q${i * 17 - 18} 75 ${i * 17 + 4} 48 Q${i * 17 - 2} 76 ${i * 17 + 16} 69 Q${i * 17 + 7} 86 ${i * 17 + 22} 108Z`} />)
-        : effect === 'afterglow' ? <><path className="ex-sunbeam" d="M-20 0 L20 0 L110 90 L110 115Z" /><g className="ex-equations"><text x="5" y="28">∫ dx</text><text x="60" y="84">∑ x²</text><text x="74" y="20">∞</text></g></>
-        : effect === 'starfall' ? <><ellipse className="ex-orbit" cx="50" cy="50" rx="60" ry="23" transform="rotate(-35 50 50)" /><g className="ex-stars">{[0,1,2,3].map(i => <path key={i} style={{ '--n': i } as CSSProperties} d={`M${15+i*23} ${12+i*20} l2 7 7 2 -7 2 -2 7 -2 -7 -7 -2 7 -2Z`} />)}</g><path className="ex-comet" d="M-20 80 L120 5" /></>
-        : effect === 'court-pass' ? <><path className="ex-pass" d="M-30 115 Q30 60 130 5 M-30 128 Q35 73 130 18" /><circle className="ex-ball" cx="50" cy="50" r="9" /><path className="ex-court" d="M0 85 L100 55 M5 100 L25 0" /></>
-        : effect === 'phase-break' ? <><path className="ex-fault" d="M0 18 H70 L30 45 H100 M0 75 H40 L80 55 H100" /><path className="ex-fault ex-fault--echo" d="M0 25 H80 L40 52 H100 M0 82 H50 L90 62 H100" /></>
-        : <>{[0,1,2,3,4].map(i => <path key={i} className="ex-land" style={{ '--n': i } as CSSProperties} d={`M-10 ${50+i*12} Q15 ${15+i*12} 40 ${50+i*8} T110 ${30+i*12}`} />)}<path className="ex-faultline" d="M0 95 L25 70 L40 76 L55 47 L70 52 L100 15" /></>}
-      </svg>
-      <svg className="unit-evo-fx__trails" viewBox="0 0 100 100" fill="none">
-        <path className="unit-evo-fx__trace" d={effect === 'court-pass' ? 'M-20 95 Q35 80 120 10 M-20 80 Q40 65 120 -5' : effect === 'contour' || effect === 'strata-memory' ? 'M-10 80 Q20 40 45 65 T110 40 M-10 90 Q20 50 45 75 T110 50 M-10 70 Q20 30 45 55 T110 30' : effect === 'starfall' ? 'M10 80 L30 25 L60 45 L85 10 M30 25 L80 85' : effect === 'afterglow' ? 'M5 80 Q35 10 60 65 T110 20' : effect === 'inferno' ? 'M10 110 Q40 60 15 40 Q55 65 40 0 M55 110 Q90 60 70 20' : 'M0 30 H70 V45 H20 V60 H100'} />
-      </svg>
-      {Array.from({ length: 6 }, (_, i) => <i key={i} className="unit-evo-fx__spark" style={{ left: `${12 + i * 15}%`, animationDelay: `${i * -.7}s` }} />)}
+      <span className="unit-evo-fx__glint" />
+      {Array.from({ length: 6 }, (_, i) => <i key={i} className="unit-evo-fx__mote" style={{ '--n': i } as CSSProperties} />)}
     </div>
   );
 }
