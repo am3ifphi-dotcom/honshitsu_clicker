@@ -1,4 +1,5 @@
 import type { EvolutionEffect, PassiveDef, SkillDef } from '../types';
+import { CHAPTERS } from './story';
 import ryomaAfter from '../../assets/img/ryoma_shinka.jpg';
 import reiAfter from '../../assets/img/rei_shinka.jpg';
 import terachiAfter from '../../assets/img/terachi_shinka.jpg';
@@ -53,15 +54,48 @@ export const EVOLUTION_BATTLE_DROPS: Record<string, string> = {
   'y2-7': 'evo_jimen',
 };
 
-export const EVOLUTION_MATERIAL_SOURCES: Record<string, { battleId: string; label: string }> = {
-  evo_ryoma: { battleId: 'y1-1', label: '第一章「両馬二郎の生態系と、✝本質✝の発生」' },
-  evo_rei: { battleId: 'y1-9', label: '第九章「昼休みの力学と、零の話」' },
-  evo_terachi: { battleId: 'y3-5', label: '第五章「寺地星、沈黙する」' },
-  evo_heikatsu: { battleId: 'y3-1', label: '第一章「火曜三限、最後の地形図」' },
-  evo_mie: { battleId: 'y3-4', label: '第四章「球技大会、二点差」' },
-  evo_pregen: { battleId: 'y3-2', label: '第二章「✝本質✝のグレートチェーン」' },
-  evo_jimen: { battleId: 'y2-7', label: '第九章「ハワイの✝本質✝」' },
-};
+// 素材ID → ドロップするバトルID（ストーリー章）。
+const MATERIAL_BATTLE: Record<string, string> = Object.fromEntries(
+  Object.entries(EVOLUTION_BATTLE_DROPS).map(([battleId, materialId]) => [materialId, battleId]),
+);
+
+export interface EvolutionMaterialSource {
+  battleId: string;
+  mode: string;
+  arc: string;
+  no: string;
+  title: string;
+  /** 「ストーリー：1年生編 第一章『両馬二郎の生態系と、✝本質✝の発生』」形式 */
+  label: string;
+  /** 「1年生編 第一章」形式（場所を短く示したいUI用） */
+  short: string;
+}
+
+// 章データから入手先情報を組み立てて、どこで手に入るか常に一意にわかるようにする。
+export const EVOLUTION_MATERIAL_SOURCES: Record<string, EvolutionMaterialSource> = Object.fromEntries(
+  Object.entries(MATERIAL_BATTLE).map(([materialId, battleId]) => {
+    const chapter = CHAPTERS.find((c) => c.id === battleId);
+    const arc = chapter?.arc ?? 'ストーリー';
+    const no = chapter?.no ?? '';
+    const title = chapter?.title ?? battleId;
+    return [
+      materialId,
+      {
+        battleId,
+        mode: 'ストーリー',
+        arc,
+        no,
+        title,
+        label: `ストーリー：${arc} ${no}『${title}』`,
+        short: `${arc} ${no}`,
+      },
+    ];
+  }),
+);
+
+export function getEvolutionMaterialSource(materialId: string): EvolutionMaterialSource | undefined {
+  return EVOLUTION_MATERIAL_SOURCES[materialId];
+}
 
 export const EVOLUTION_FORMS: Record<string, EvolutionForm> = {
   ex_ryoma: {

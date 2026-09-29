@@ -82,7 +82,9 @@ export default function ItemsTab() {
                         <span className="truncate">{it.name}</span>
                         <span className="shrink-0 text-cyan-200">×{count}/{form?.cost.materialCount ?? 3}</span>
                       </div>
-                      <div className="text-[10px] leading-tight text-slate-300">入手先：{source?.label ?? '関連バトル'}</div>
+                      <div className="mt-0.5 rounded-md border border-cyan-300/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] leading-tight font-bold text-cyan-200">
+                        📍 入手先：{source?.label ?? '関連バトル'}
+                      </div>
                       <div className="truncate text-[10px] italic text-slate-500">{it.flavor}</div>
                     </div>
                   </div>

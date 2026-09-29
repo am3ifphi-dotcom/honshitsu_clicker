@@ -232,10 +232,10 @@ function debugAmount(value: unknown, fallback: number) {
   return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : fallback;
 }
 
-// 開発用の手動コマンド。コンソールへコマンド一覧・ヘルプ・実装内容は出力しない。
+// コンソールから使える手動デバッグコマンド（window.hdebug）。
+// 開発・ビルド版どちらでも使えるが、コンソールへコマンド一覧・ヘルプ・実装内容は出力しない。
 function setupDebugCommands(set: any, get: any) {
-  // Dev builds only: the browser bundle is inspectable, so never ship cheats to production.
-  if (!import.meta.env.DEV || typeof window === 'undefined') return;
+  if (typeof window === 'undefined') return;
 
   const commands = {
     addHonshitsu: (n = 1e30) => {
@@ -328,7 +328,6 @@ export const useGame = create<GameStore>()((set, get) => ({
   init: () => {
     if (initialized) return 0;
     initialized = true;
-    setupDebugCommands(set, get);
     let offlineGain = 0;
     try {
       const raw = localStorage.getItem(SAVE_KEY);
@@ -1493,5 +1492,8 @@ export const useGame = create<GameStore>()((set, get) => ({
     }
   },
 }));
+
+// ページ読み込み直後からコンソールで使えるように、ストア生成と同時に hdebug を登録する。
+setupDebugCommands(useGame.setState, useGame.getState);
 
 export { RARITIES };
