@@ -434,115 +434,221 @@ button:disabled {
 @keyframes unitEvoPhase { 0%, 100% { opacity: .12; transform: translateX(-16%); } 50% { opacity: .6; transform: translateX(16%); } }
 @keyframes unitEvoStrata { 0%, 100% { transform: translateY(6%) scaleY(.85); } 50% { transform: translateY(-2%) scaleY(1.1); } }
 
-/* ───────── EX固有のシネマティック進化演出 ───────── */
-.evo-cut {
-  --evo-accent: #67e8f9;
-  position: fixed;
-  z-index: 90;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  color: #f8fafc;
-  background: #03030a;
-  isolation: isolate;
-  transition: opacity .42s ease, transform .42s ease;
+/* Full-viewport character cinema. Artwork, not a card, is the stage. */
+.evolution { position:fixed; inset:0; z-index:10000; background:#050509; color:#fff; overflow:hidden; isolation:isolate; outline:none; }
+.evolution-film { position:absolute; inset:0; overflow:hidden; }
+.evolution-art { position:absolute; inset:0; transition:opacity 1s, transform 1.4s cubic-bezier(.16,1,.3,1), filter 1s; }
+.evolution-art img { width:100%; height:100%; object-fit:cover; object-position:50% 36%; }
+.evolution-art--before { opacity:.65; animation:cinemaApproach 7.2s ease-in both; }
+.evolution-art--after { opacity:0; transform:scale(1.22); }
+.evolution-glyph { display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: min(85vw,85dvh); color:var(--accent); text-shadow:0 0 90px var(--accent); }
+.evolution-shade { position:absolute; inset:0; background:linear-gradient(0deg,#03040a 0%,#03040a99 16%,transparent 60%,#03040a66),linear-gradient(90deg,#03040a55,transparent 70%); }
+.evolution-field { position:absolute; inset:0; opacity:.65; mix-blend-mode:screen; pointer-events:none; }
+.evolution-field .unit-evo-fx__glint { animation-duration:8s; }
+.evolution-fragments { position:absolute; inset:0; pointer-events:none; }
+.evolution-fragments i { position:absolute; color:var(--accent); font-style:normal; font-size:clamp(12px,2vw,32px); text-shadow:0 0 14px var(--accent); animation:cinemaDust 5s linear infinite; animation-delay:calc(var(--i) * -.31s); }
+.evolution-letterbox { position:absolute; left:0; right:0; height:9%; background:#050509; transition:height 1.2s; }
+.evolution-letterbox--top { top:0; }.evolution-letterbox--bottom { bottom:0; }
+.evolution-header { position:absolute; top:max(22px,env(safe-area-inset-top)); left:5%; right:5%; display:flex; justify-content:space-between; font-size:10px; letter-spacing:.3em; color:#ddd; }
+.evolution-header b { color:var(--accent); padding:0 10px; }
+.evolution-prologue { position:absolute; bottom:18%; left:8%; width:min(650px,84%); transition:opacity .6s,transform .6s; }
+.evolution-prologue span { color:var(--accent); font-size:13px; letter-spacing:.15em; }
+.evolution-prologue p { margin-top:20px; font-family:serif; font-size:clamp(20px,2.8vw,38px); line-height:1.9; text-shadow:0 2px 18px #000; }
+.evolution-dialogue { position:absolute; bottom:18%; left:8%; width:min(900px,84%); opacity:0; transform:translateY(20px); transition:opacity .7s,transform .7s; }
+.evolution-dialogue small { color:var(--accent); letter-spacing:.15em; }
+.evolution-dialogue p { font-family:serif; font-size:clamp(24px,3.6vw,52px); line-height:1.65; font-weight:700; text-shadow:0 3px 14px #000,0 0 40px #000; }
+.evolution--beat-1 .evolution-prologue,.evolution--beat-2 .evolution-prologue,.evolution--beat-3 .evolution-prologue,.evolution--beat-4 .evolution-prologue,.evolution--beat-5 .evolution-prologue { opacity:0; transform:translateY(-20px); }
+.evolution--beat-1 .evolution-dialogue,.evolution--beat-2 .evolution-dialogue { opacity:1; transform:none; }
+.evolution-seal { position:absolute; inset:0; display:flex; justify-content:center; align-items:center; font-size:min(110vw,110dvh); line-height:1; color:var(--accent); opacity:0; pointer-events:none; text-shadow:0 0 80px var(--accent); }
+.evolution--beat-3 .evolution-seal { animation:cinemaSeal 1.1s cubic-bezier(.2,.7,.2,1) both; }
+.evolution-wipe { position:absolute; inset:-60%; opacity:0; background:linear-gradient(110deg,transparent 35%,var(--accent) 48%,#fff 50%,var(--accent) 52%,transparent 65%); transform:translateX(-100%); }
+.evolution--beat-3 .evolution-wipe { animation:cinemaWipe 1.1s ease-in both; }
+.evolution-signature { position:absolute; inset:0; padding:12% 8%; display:flex; flex-direction:column; justify-content:center; pointer-events:none; opacity:0; font-family:serif; font-weight:900; font-size:clamp(36px,7.4vw,110px); line-height:1.45; letter-spacing:-.045em; text-shadow:0 4px 30px #000,0 0 45px var(--accent); }
+.evolution-signature span:last-child { color:var(--accent); align-self:flex-end; }
+.evolution--beat-4 .evolution-signature { opacity:1; }
+.evolution--beat-4 .evolution-signature span { animation:cinemaType .7s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(var(--line) * .2s); }
+.evolution-impact { position:absolute; inset:0; background:var(--accent); opacity:0; pointer-events:none; mix-blend-mode:screen; }
+.evolution--beat-4 .evolution-impact { animation:cinemaImpact .9s ease-out both; }
+.evolution--beat-4 .evolution-art--before,.evolution--beat-5 .evolution-art--before { opacity:0; }
+.evolution--beat-4 .evolution-art--after,.evolution--beat-5 .evolution-art--after { opacity:1; transform:scale(1); }
+.evolution--beat-4 .evolution-letterbox,.evolution--beat-5 .evolution-letterbox { height:0; }
+.evolution-result { position:absolute; left:7%; right:7%; bottom:max(6%,35px); animation:cinemaResult 1.2s both; }
+.evolution-rank { display:flex; gap:20px; align-items:center; font-size:clamp(50px,7vw,94px); font-weight:900; font-style:italic; line-height:1; color:var(--accent); text-shadow:0 0 30px var(--accent); }
+.evolution-rank span { font-size:12px; font-style:normal; letter-spacing:.3em; color:#fff; text-shadow:none; }
+.evolution-result>p { margin:18px 0 8px; font-size:clamp(12px,1.5vw,18px); letter-spacing:.2em; color:var(--accent); }
+.evolution-result h2 { font-family:serif; font-size:clamp(24px,3.6vw,52px); font-weight:900; line-height:1.4; text-shadow:0 3px 20px #000; }
+.evolution-actions { display:flex; gap:12px; margin-top:24px; }
+.evolution-actions button,.evolution-skip { padding:12px 22px; border:1px solid #ffffff50; background:#03040ab3; color:#fff; font-size:12px; letter-spacing:.1em; cursor:pointer; backdrop-filter:blur(12px); }
+.evolution-actions .evolution-primary { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 22%,#03040a); }
+.evolution-primary span { margin-left:30px; color:var(--accent); }
+.evolution button:hover { background:color-mix(in srgb,var(--accent) 40%,#03040a); }
+.evolution button:focus-visible { outline:2px solid white; outline-offset:4px; }
+.evolution-skip { position:absolute; right:5%; bottom:max(25px,env(safe-area-inset-bottom)); padding:8px 15px; font-size:10px; }
+.evolution-progress { position:absolute; bottom:14px; left:7%; display:flex; gap:5px; }
+.evolution-progress i { width:24px; height:2px; background:#ffffff30; }.evolution-progress i.active { background:var(--accent); box-shadow:0 0 8px var(--accent); }
+/* Different visual grammar for each awakening. */
+.evolution--inferno .evolution-fragments i { animation-name:cinemaEmber; }
+.evolution--inferno.evolution--beat-4 .evolution-art { animation:cinemaQuake .5s; }
+.evolution--afterglow .evolution-wipe { background:linear-gradient(90deg,transparent,#ffca8177,#fff2cd,transparent); }
+.evolution--afterglow .evolution-fragments i { font-family:serif; color:#ffe4b6; }
+.evolution--starfall .evolution-fragments i:nth-child(3n) { width:70px; height:44px; border:1px solid #cad8ff99; background:linear-gradient(150deg,#bfcfff55,transparent); animation-name:cinemaPaper; }
+.evolution--contour .evolution-wipe { background:repeating-radial-gradient(ellipse at center,transparent 0 38px,#ffdc89 39px 41px,transparent 42px 65px); }
+.evolution--court-pass .evolution-wipe { transform:rotate(-25deg); background:repeating-linear-gradient(0deg,transparent 0 80px,#b2e9ff99 82px,#fff 84px,transparent 88px 130px); }
+.evolution--court-pass .evolution-fragments i { animation-name:cinemaPass; }
+.evolution--phase-break .evolution-art--after { filter:drop-shadow(10px 0 #ff0044) drop-shadow(-10px 0 #00ccff); }
+.evolution--phase-break .evolution-seal { animation-timing-function:steps(4); }
+.evolution--phase-break .evolution-fragments { animation:unitEvoGlitch 2s steps(2) infinite; }
+.evolution--strata-memory .evolution-wipe { background:repeating-linear-gradient(0deg,transparent 0 30px,#d7a56d 32px 35px,transparent 40px 100px); }
+@keyframes cinemaApproach { from { transform:scale(1); filter:saturate(.6); } to { transform:scale(1.18); filter:saturate(1); } }
+@keyframes cinemaDust { 0% { transform:translateY(30px); opacity:0; } 25%,70% { opacity:.7; } 100% { transform:translateY(-100px); opacity:0; } }
+@keyframes cinemaEmber { 0% { transform:translate(-20px,80px) scale(.5); opacity:0; } 30% { opacity:1; } 100% { transform:translate(60px,-240px) scale(1.4); opacity:0; } }
+@keyframes cinemaPaper { 0% { transform:translate(0,90px) rotate(-20deg); opacity:0; } 30%,70% { opacity:.7; } 100% { transform:translate(80px,-160px) rotate(40deg); opacity:0; } }
+@keyframes cinemaPass { 0% { transform:translate(-40vw,20vh) rotate(-25deg) scaleX(3); opacity:0; } 40% { opacity:1; } 100% { transform:translate(40vw,-20vh) rotate(-25deg) scaleX(8); opacity:0; } }
+@keyframes cinemaSeal { 0% { transform:scale(.25) rotate(-20deg); opacity:0; } 35%,60% { opacity:.95; } 100% { transform:scale(2.3) rotate(10deg); opacity:0; } }
+@keyframes cinemaWipe { 0% { transform:translateX(-80%); opacity:0; } 35%,70% { opacity:1; } 100% { transform:translateX(80%); opacity:0; } }
+@keyframes cinemaImpact { from { opacity:.8; } to { opacity:0; } }
+@keyframes cinemaType { from { opacity:0; transform:translateX(-80px) scale(1.12); filter:blur(10px); } to { opacity:1; transform:none; filter:none; } }
+@keyframes cinemaResult { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:none; } }
+@keyframes cinemaQuake { 20% { transform:translate(-8px,4px) scale(1.03); } 40% { transform:translate(6px,-4px) scale(1.03); } 70% { transform:translate(-3px,2px) scale(1.01); } }
+@media(min-aspect-ratio: 3/2) { .evolution-art img { object-position:50% 32%; } .evolution-result { right:30%; } }
+@media(max-width:600px) { .evolution-art img { object-position:50% 35%; } .evolution-dialogue { bottom:20%; } .evolution-header { font-size:8px; letter-spacing:.12em; } .evolution-signature { padding:20% 5%; font-size:clamp(32px,8vw,48px); } .evolution-result { left:6%; right:6%; } .evolution-actions button { padding:12px; } .evolution-rank span { font-size:10px; } }
+@media(max-height:500px) { .evolution-result { bottom:30px; } .evolution-rank { font-size:36px; }.evolution-result h2 { font-size:24px; }.evolution-result>p { margin:8px 0; }.evolution-actions { margin-top:12px; }.evolution-signature { font-size:9vh; } }
+/* Icon-local living overlays: traces travel over the art, not around its frame. */
+.unit-evo-fx { --fx:#ffb965; }
+.unit-evo-fx--inferno { --fx:#ff732b; }
+.unit-evo-fx--starfall { --fx:#bbcaff; }
+.unit-evo-fx--contour { --fx:#ffdc8b; }
+.unit-evo-fx--court-pass { --fx:#c5efff; }
+.unit-evo-fx--phase-break { --fx:#ff4269; }
+.unit-evo-fx--strata-memory { --fx:#eeb979; }
+.unit-evo-fx__trails { position:absolute; inset:0; width:100%; height:100%; opacity:.65; filter:drop-shadow(0 0 2px var(--fx)); }
+.unit-evo-fx__trace { stroke:var(--fx); stroke-width:.7; stroke-dasharray:12 60; animation:iconTrace 4s linear infinite; }
+.unit-evo-fx__spark { position:absolute; bottom:-10%; width:3%; height:3%; border-radius:50%; background:var(--fx); box-shadow:0 0 6px var(--fx); animation:iconSpark 3.5s linear infinite; }
+.unit-evo-fx--inferno .unit-evo-fx__spark { height:12%; border-radius:70% 0; animation-duration:1.8s; }
+.unit-evo-fx--afterglow .unit-evo-fx__spark { width:2%; height:2%; animation-duration:7s; }
+.unit-evo-fx--starfall .unit-evo-fx__spark { border-radius:0; clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%); width:9%; height:9%; }
+.unit-evo-fx--court-pass .unit-evo-fx__trace { stroke-width:1.4; stroke-dasharray:25 90; animation-duration:1.2s; }
+.unit-evo-fx--court-pass .unit-evo-fx__spark { animation-name:iconPass; width:18%; height:1%; }
+.unit-evo-fx--contour .unit-evo-fx__trace { stroke-dasharray:50 12; animation-duration:8s; }
+.unit-evo-fx--phase-break .unit-evo-fx__spark { width:18%; height:2%; border-radius:0; animation-timing-function:steps(4); }
+.unit-evo-fx--strata-memory .unit-evo-fx__trace { stroke-dasharray:80 30; animation-duration:10s; }
+.unit-evo-fx:not(.is-active) * { animation-play-state:paused; }
+@keyframes iconTrace { to { stroke-dashoffset:-144; } }
+@keyframes iconSpark { 0% { transform:translateY(0) scale(.5); opacity:0; } 20%,70% { opacity:.9; } 100% { transform:translate(10px,-100px) scale(1.1); opacity:0; } }
+@keyframes iconPass { 0% { transform:translate(-60px,0) rotate(-30deg); opacity:0; } 30% { opacity:1; } 100% { transform:translate(90px,-100px) rotate(-30deg); opacity:0; } }
+@media(prefers-reduced-motion:reduce) {
+  .evolution *, .unit-evo-fx * { animation:none !important; transition:none !important; }
+  .evolution--beat-3 .evolution-seal { opacity:.35; }
+  .evolution-art--before { transform:none; }
+  .unit-evo-fx__trails { opacity:.35; }
 }
-.evo-cut.is-finishing { opacity: 0; transform: scale(1.035); }
-.evo-cut__backdrop,
-.evo-cut__grid,
-.evo-cut__contours,
-.evo-cut__rays,
-.evo-cut__particles,
-.evo-cut__flash { position: absolute; inset: 0; pointer-events: none; }
-.evo-cut__backdrop { background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--evo-accent) 28%, transparent), transparent 49%), radial-gradient(ellipse at 50% 110%, color-mix(in srgb, var(--evo-accent) 16%, #03030a), #03030a 68%); }
-.evo-cut__grid { opacity: .16; background-image: linear-gradient(color-mix(in srgb, var(--evo-accent) 38%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--evo-accent) 38%, transparent) 1px, transparent 1px); background-size: 36px 36px; mask-image: radial-gradient(ellipse, #000 10%, transparent 78%); transform: perspective(650px) rotateX(56deg) scale(1.8) translateY(18%); transform-origin: center bottom; }
-.evo-cut__contours { opacity: .22; background: repeating-radial-gradient(ellipse at 50% 52%, transparent 0 26px, color-mix(in srgb, var(--evo-accent) 33%, transparent) 27px 28px, transparent 29px 49px); animation: evoContourShift 15s ease-in-out infinite; }
-.evo-cut__rays { opacity: .23; background: repeating-conic-gradient(from 0deg at 50% 46%, transparent 0deg 9deg, color-mix(in srgb, var(--evo-accent) 38%, transparent) 9.4deg 9.8deg, transparent 10.2deg 18deg); mask-image: radial-gradient(circle, #000 2%, transparent 70%); animation: evoRayTurn 48s linear infinite; }
-.evo-cut__particle { position: absolute; bottom: -10%; color: var(--evo-accent); opacity: 0; text-shadow: 0 0 16px var(--evo-accent); white-space: nowrap; animation: evoParticleRise linear infinite; }
-.evo-cut__flash { z-index: 6; opacity: 0; background: radial-gradient(circle, #fff 0%, color-mix(in srgb, var(--evo-accent) 74%, white) 16%, transparent 76%); }
-.evo-cut__flash.is-on { animation: evoFlash .95s ease-out both; }
-.evo-cut__frame { position: relative; z-index: 8; display: flex; width: min(100%, 1120px); height: 100dvh; min-height: 0; flex-direction: column; gap: clamp(8px, 1.7vh, 18px); padding: clamp(12px, 3vh, 30px) clamp(14px, 4vw, 46px); overflow-y: auto; }
-.evo-cut__eyebrow { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid color-mix(in srgb, var(--evo-accent) 38%, transparent); padding-bottom: 8px; color: color-mix(in srgb, var(--evo-accent) 84%, white); font: 900 10px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .22em; }
-.evo-cut__status { display: inline-flex; align-items: center; gap: 6px; color: rgba(255,255,255,.62); letter-spacing: .1em; }
-.evo-cut__status i { width: 6px; height: 6px; border-radius: 50%; background: var(--evo-accent); box-shadow: 0 0 10px var(--evo-accent); animation: evoStatus 1s ease-in-out infinite; }
-.evo-cut__motif { display: flex; flex: none; align-items: center; justify-content: center; gap: 12px; color: rgba(255,255,255,.34); font: 800 9px/1 ui-monospace, monospace; letter-spacing: .18em; opacity: 0; transform: translateY(8px); transition: opacity .6s ease, transform .6s ease; }
-.evo-cut__motif.is-active { opacity: 1; transform: none; }
-.evo-cut__motif-line { width: clamp(30px, 10vw, 110px); height: 1px; background: linear-gradient(90deg, transparent, var(--evo-accent), transparent); box-shadow: 0 0 10px var(--evo-accent); }
-.evo-cut__stage { position: relative; flex: none; width: clamp(210px, 38vh, 410px); max-width: 76vw; aspect-ratio: 1; margin: auto; isolation: isolate; }
-.evo-cut__stage::before { position: absolute; inset: 14%; border: 1px solid color-mix(in srgb, var(--evo-accent) 62%, transparent); border-radius: 50%; content: ''; box-shadow: 0 0 34px color-mix(in srgb, var(--evo-accent) 28%, transparent), inset 0 0 34px color-mix(in srgb, var(--evo-accent) 12%, transparent); opacity: .75; }
-.evo-cut__stage::after { position: absolute; z-index: 5; inset: 8%; border: 1px dashed color-mix(in srgb, var(--evo-accent) 40%, transparent); border-radius: 50%; content: ''; animation: evoOrbit 26s linear infinite; }
-.evo-cut__orbit { position: absolute; z-index: 1; left: 50%; top: 50%; width: 108%; height: 38%; border: 1px solid color-mix(in srgb, var(--evo-accent) 60%, transparent); border-radius: 50%; box-shadow: 0 0 20px color-mix(in srgb, var(--evo-accent) 28%, transparent); transform: translate(-50%, -50%) rotate(-28deg); }
-.evo-cut__orbit--two { width: 116%; height: 58%; border-color: color-mix(in srgb, var(--evo-accent) 28%, transparent); transform: translate(-50%, -50%) rotate(39deg); animation: evoOrbit 14s linear infinite reverse; }
-.evo-cut__seal { position: absolute; z-index: 4; left: 50%; top: 50%; color: var(--evo-accent); font-size: clamp(25px, 5vmin, 48px); text-shadow: 0 0 12px var(--evo-accent), 0 0 38px var(--evo-accent); transform: translate(-50%, -50%); animation: evoSeal 2.2s ease-in-out infinite; }
-.evo-cut__art { position: absolute; z-index: 2; inset: 11%; overflow: hidden; border: 1px solid color-mix(in srgb, var(--evo-accent) 75%, white); border-radius: 22px; background: #080810; box-shadow: 0 0 48px color-mix(in srgb, var(--evo-accent) 32%, transparent), 0 24px 90px #000c; transition: opacity .85s ease, transform 1.1s cubic-bezier(.2,.8,.2,1), filter .85s ease; }
-.evo-cut__art::after { position: absolute; inset: 0; background: linear-gradient(145deg, color-mix(in srgb, var(--evo-accent) 13%, transparent), transparent 55%, rgba(0,0,0,.32)); content: ''; mix-blend-mode: screen; }
-.evo-cut__art-media { width: 100%; height: 100%; object-fit: cover; }
-.evo-cut__art--before { opacity: 1; transform: scale(1); filter: saturate(.8) brightness(.8); }
-.evo-cut__art--after { opacity: 0; transform: scale(.72) rotate(5deg); filter: saturate(1.8) brightness(1.9) blur(10px); }
-.evo-cut__stage.is-revealed .evo-cut__art--before { opacity: 0; transform: scale(1.22) rotate(-3deg); filter: brightness(2.3) blur(8px); }
-.evo-cut__stage.is-revealed .evo-cut__art--after { opacity: 1; transform: scale(1) rotate(0); filter: saturate(1.15) brightness(1) blur(0); animation: evoNewArt 1s cubic-bezier(.2,1.15,.35,1) both; }
-.evo-cut__glyph { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; color: color-mix(in srgb, var(--evo-accent) 72%, white); font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: clamp(110px, 24vmin, 280px); text-shadow: 0 0 28px var(--evo-accent); }
-.evo-cut__stage-label { position: absolute; z-index: 6; left: 50%; bottom: 0; display: flex; width: max-content; max-width: 100%; flex-direction: column; align-items: center; gap: 3px; padding: 6px 12px; border: 1px solid color-mix(in srgb, var(--evo-accent) 36%, transparent); border-radius: 999px; background: rgba(2,3,10,.76); color: white; font-size: clamp(10px, 1.7vh, 15px); font-weight: 800; text-align: center; transform: translate(-50%, 55%); transition: opacity .55s ease; }
-.evo-cut__stage-label small { color: color-mix(in srgb, var(--evo-accent) 80%, white); font: 800 8px/1 ui-monospace, monospace; letter-spacing: .22em; }
-.evo-cut__stage-label--after { opacity: 0; }
-.evo-cut__stage.is-revealed .evo-cut__stage-label--before { opacity: 0; }
-.evo-cut__stage.is-revealed .evo-cut__stage-label--after { opacity: 1; }
-.evo-cut__copy { flex: none; min-height: clamp(100px, 16vh, 154px); text-align: center; }
-.evo-cut__narration { color: rgba(255,255,255,.57); font-size: clamp(11px, 1.8vh, 14px); line-height: 1.6; opacity: 0; transform: translateY(8px); transition: opacity .8s ease, transform .8s ease; }
-.evo-cut__narration.is-visible { opacity: 1; transform: none; }
-.evo-cut__quote { position: relative; width: min(100%, 840px); margin: 5px auto 0; opacity: 0; transform: translateY(18px) scale(.97); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1); }
-.evo-cut__quote.is-visible { opacity: 1; transform: none; }
-.evo-cut__quote-mark { position: absolute; left: 0; top: -28px; color: color-mix(in srgb, var(--evo-accent) 76%, white); font: 900 clamp(38px, 9vmin, 76px)/1 Georgia, serif; opacity: .7; }
-.evo-cut__quote p { margin: 0; color: white; font-family: "Noto Serif JP", "Yu Mincho", serif; font-size: clamp(16px, 3.2vh, 28px); font-weight: 900; line-height: 1.5; text-shadow: 0 2px 18px #000, 0 0 28px color-mix(in srgb, var(--evo-accent) 24%, transparent); }
-.evo-cut__quote-rule { display: block; width: min(50%, 240px); height: 1px; margin: 8px auto 0; background: linear-gradient(90deg, transparent, var(--evo-accent), transparent); }
-.evo-cut__name { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; color: color-mix(in srgb, var(--evo-accent) 78%, white); font: 800 9px/1.4 ui-monospace, monospace; letter-spacing: .13em; opacity: 0; transform: translateY(10px); transition: opacity .7s ease, transform .7s ease; }
-.evo-cut__name.is-visible { opacity: 1; transform: none; }
-.evo-cut__name strong { color: white; font: 900 clamp(15px, 2.5vh, 22px)/1.35 "Noto Serif JP", "Yu Mincho", serif; letter-spacing: .04em; }
-.evo-cut__footer { flex: none; border-top: 1px solid rgba(255,255,255,.12); padding-top: 8px; }
-.evo-cut__timeline { display: flex; justify-content: center; gap: 5px; }
-.evo-cut__timeline i { width: clamp(24px, 8vw, 70px); height: 2px; background: rgba(255,255,255,.14); transition: background .4s, box-shadow .4s; }
-.evo-cut__timeline i.is-lit { background: var(--evo-accent); box-shadow: 0 0 12px var(--evo-accent); }
-.evo-cut__footer-row { display: flex; min-height: 32px; align-items: center; justify-content: space-between; gap: 8px; margin-top: 5px; color: rgba(255,255,255,.48); font: 800 9px/1.2 ui-monospace, monospace; letter-spacing: .12em; }
-.evo-cut__finish { border: 1px solid color-mix(in srgb, var(--evo-accent) 70%, white); border-radius: 999px; padding: 8px 14px; background: color-mix(in srgb, var(--evo-accent) 20%, #080812); color: white; font-family: inherit; font-size: 11px; font-weight: 900; line-height: 1.2; letter-spacing: .04em; box-shadow: 0 0 22px color-mix(in srgb, var(--evo-accent) 28%, transparent); animation: evoFinishPulse 1.5s ease-in-out infinite; }
-.evo-cut__finish b { padding-left: 5px; color: var(--evo-accent); }
-.evo-cut--inferno .evo-cut__backdrop { background: radial-gradient(ellipse at 50% 100%, rgba(255,61,13,.25), transparent 48%), radial-gradient(ellipse at 50% 35%, rgba(255,147,34,.22), transparent 54%), #070309; }
-.evo-cut--afterglow .evo-cut__backdrop { background: radial-gradient(ellipse at 50% 84%, rgba(255,191,130,.25), transparent 54%), linear-gradient(180deg, #10101b 0%, #22162a 52%, #100d18 100%); }
-.evo-cut--starfall .evo-cut__contours { opacity: .5; background: radial-gradient(circle at 22% 32%, #fff 0 1px, transparent 2px), radial-gradient(circle at 76% 57%, #e0f7ff 0 1px, transparent 2px), radial-gradient(circle at 58% 13%, #fff 0 2px, transparent 3px); background-size: 75px 83px, 113px 109px, 137px 127px; animation: evoStarfield 18s linear infinite; }
-.evo-cut--contour .evo-cut__contours { opacity: .44; }
-.evo-cut--court-pass .evo-cut__rays { background: repeating-conic-gradient(from 0deg at 50% 50%, transparent 0deg 17deg, rgba(139,220,255,.32) 17.4deg 17.8deg, transparent 18.2deg 34deg); animation-duration: 17s; }
-.evo-cut--phase-break .evo-cut__grid { opacity: .3; animation: evoGridGlitch 3s steps(2) infinite; }
-.evo-cut--phase-break .evo-cut__contours { opacity: .4; background: repeating-linear-gradient(0deg, transparent 0 14px, rgba(255,50,94,.35) 15px 16px, transparent 17px 31px); animation: evoPhaseScan 2.3s steps(2) infinite; }
-.evo-cut--strata-memory .evo-cut__contours { top: auto; height: 65%; opacity: .42; background: repeating-linear-gradient(0deg, transparent 0 18px, rgba(202,148,95,.58) 19px 21px, rgba(81,47,36,.32) 22px 31px); mask-image: linear-gradient(0deg, #000, transparent); }
-@keyframes evoContourShift { 0%, 100% { transform: scale(1) translate(0); } 50% { transform: scale(1.08) translate(-1%, 1%); } }
-@keyframes evoRayTurn { to { transform: rotate(360deg); } }
-@keyframes evoParticleRise { 0% { transform: translateY(0) rotate(0); opacity: 0; } 12%, 78% { opacity: .72; } 100% { transform: translateY(-115vh) rotate(28deg); opacity: 0; } }
-@keyframes evoFlash { 0% { opacity: 0; } 12% { opacity: .95; } 42% { opacity: .2; } 100% { opacity: 0; } }
-@keyframes evoOrbit { to { transform: rotate(360deg); } }
-@keyframes evoSeal { 0%, 100% { opacity: .5; transform: translate(-50%,-50%) scale(.8); } 50% { opacity: 1; transform: translate(-50%,-50%) scale(1.25); } }
-@keyframes evoNewArt { 0% { filter: brightness(2.5) saturate(1.5); } 100% { filter: brightness(1) saturate(1.15); } }
-@keyframes evoStatus { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
-@keyframes evoFinishPulse { 0%,100% { transform: scale(1); box-shadow: 0 0 16px color-mix(in srgb, var(--evo-accent) 20%, transparent); } 50% { transform: scale(1.035); box-shadow: 0 0 30px color-mix(in srgb, var(--evo-accent) 48%, transparent); } }
-@keyframes evoStarfield { to { background-position: 80px 110px, -95px 85px, 60px -120px; } }
-@keyframes evoGridGlitch { 0%, 100% { transform: perspective(650px) rotateX(56deg) scale(1.8) translateY(18%); filter: none; } 50% { transform: perspective(650px) rotateX(55deg) scale(1.82) translate(1%,17%); filter: hue-rotate(70deg); } }
-@keyframes evoPhaseScan { 0%,100% { transform: translateY(-6%); opacity: .2; } 50% { transform: translateY(8%); opacity: .55; } }
+/* EX second direction: luminous signature motion at icon scale. */
+.ex-living-icon { border-color:var(--ex-color,#b7d7ff); box-shadow:0 0 13px color-mix(in srgb,var(--ex-color,#b7d7ff) 50%,transparent),inset 0 0 8px #fff8; }
+.ex-living-icon--inferno { --ex-color:#ff692a; }
+.ex-living-icon--afterglow { --ex-color:#ffcf8e; }
+.ex-living-icon--starfall { --ex-color:#a8b9ff; }
+.ex-living-icon--contour { --ex-color:#ffdc83; }
+.ex-living-icon--court-pass { --ex-color:#92e4ff; }
+.ex-living-icon--phase-break { --ex-color:#ff3e70; }
+.ex-living-icon--strata-memory { --ex-color:#edaf63; }
+.ex-living-icon>img { animation:exPortraitBreath 6s ease-in-out infinite; }
+.unit-evo-fx__signature { position:absolute; inset:0; width:100%; height:100%; overflow:visible; filter:drop-shadow(0 0 2px var(--fx)); }
+.unit-evo-fx__corona { position:absolute; inset:0; border-radius:inherit; box-shadow:inset 0 0 9px var(--fx),inset 0 -5px 12px var(--fx); animation:exCorona 2.8s ease-in-out infinite; }
+.unit-evo-fx__trails { opacity:.95; }
+.unit-evo-fx__trace { stroke-width:1.2; }
+.unit-evo-fx__glint { opacity:.65; animation-duration:3.5s; }
+.unit-evo-fx__spark { width:5%; height:5%; box-shadow:0 0 5px white,0 0 9px var(--fx); }
+.unit-evo-fx--inferno .unit-evo-fx__layer--two { animation:unitEvoBreath 2s ease-in-out infinite; }
+.ex-flame { fill:#ff7027; stroke:#ffd46c; stroke-width:1.2; transform-origin:50% 100%; mix-blend-mode:screen; animation:exFlame 1.4s ease-in-out infinite alternate; animation-delay:calc(var(--n) * -.23s); }
+.ex-flame:nth-child(even) { fill:#ffc746; }
+.ex-sunbeam { fill:#ffdf9a; opacity:.35; animation:exSunbeam 5s ease-in-out infinite; }
+.ex-equations { fill:#fff2cc; font:italic 12px Georgia,serif; animation:exEquation 4s ease-in-out infinite; }
+.ex-orbit { stroke:#d6caff; stroke-width:2; stroke-dasharray:60 14; transform-origin:center; animation:exOrbit 7s linear infinite; }
+.ex-stars path { fill:white; animation:exStar 2.5s ease-in-out infinite; animation-delay:calc(var(--n) * -.6s); }
+.ex-comet { stroke:#fff; stroke-width:2; stroke-dasharray:18 160; animation:exStreak 2.4s linear infinite; }
+.ex-pass { stroke:#e3f8ff; stroke-width:3; stroke-dasharray:45 160; animation:exStreak 1.5s linear infinite; }
+.ex-ball { fill:#fff9d0; stroke:#fff; stroke-width:2; animation:exBall 1.5s cubic-bezier(.4,0,.2,1) infinite; }
+.ex-court { stroke:#b6eaff; stroke-width:.7; opacity:.6; }
+.ex-fault { stroke:#ff4265; stroke-width:4; stroke-dasharray:45 40; animation:exFault 2.6s steps(3) infinite; }
+.ex-fault--echo { stroke:#69ebff; stroke-width:2; animation-direction:reverse; }
+.ex-land { stroke:#ffe3a0; stroke-width:1.6; stroke-dasharray:55 16; animation:exLand 4s linear infinite; animation-delay:calc(var(--n) * -.5s); }
+.ex-faultline { stroke:#ffb239; stroke-width:2.5; stroke-dasharray:25 80; animation:exStreak 3s linear infinite; }
+.unit-evo-fx--strata-memory .ex-land { stroke:#eab37c; stroke-width:3; }
+.unit-evo-fx--strata-memory .unit-evo-fx__corona { box-shadow:inset 0 -14px 18px #e8a34b; }
+@keyframes exPortraitBreath { 0%,100% { transform:scale(1.01); } 50% { transform:scale(1.065) translateY(-1%); } }
+@keyframes exCorona { 0%,100% { opacity:.5; } 50% { opacity:1; } }
+@keyframes exFlame { from { transform:scaleY(.55) skewX(-6deg); opacity:.55; } to { transform:scaleY(1) skewX(6deg); opacity:.9; } }
+@keyframes exSunbeam { 0%,100% { transform:translateX(-25%); opacity:.1; } 50% { transform:translateX(15%); opacity:.45; } }
+@keyframes exEquation { 0%,100% { transform:translateY(4px); opacity:.4; } 50% { transform:translateY(-4px); opacity:1; } }
+@keyframes exOrbit { to { transform:rotate(360deg); } }
+@keyframes exStar { 0%,100% { opacity:.25; } 50% { opacity:1; } }
+@keyframes exStreak { from { stroke-dashoffset:205; } to { stroke-dashoffset:0; } }
+@keyframes exBall { 0% { transform:translate(-80px,55px) scale(.4); opacity:0; } 30%,70% { opacity:1; } 100% { transform:translate(80px,-55px) scale(1.4); opacity:0; } }
+@keyframes exFault { 0%,100% { transform:translateX(-6px); stroke-dashoffset:0; opacity:.4; } 50% { transform:translateX(6px); stroke-dashoffset:70; opacity:1; } }
+@keyframes exLand { 0% { stroke-dashoffset:0; transform:translateY(3px); } 100% { stroke-dashoffset:-71; transform:translateY(-3px); } }
 
-@media (max-height: 680px) {
-  .evo-cut__frame { gap: 6px; padding-top: 10px; padding-bottom: 10px; }
-  .evo-cut__stage { width: clamp(180px, 33vh, 280px); }
-  .evo-cut__copy { min-height: 90px; }
-}
-@media (max-width: 480px) {
-  .evo-cut__eyebrow { font-size: 8px; letter-spacing: .12em; }
-  .evo-cut__status { font-size: 7px; }
-  .evo-cut__stage { width: clamp(200px, 40vh, 330px); max-width: 72vw; }
-  .evo-cut__footer-row { font-size: 8px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .unit-evo-fx *, .evo-cut *, .evo-cut::before, .evo-cut::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-  }
-  .unit-evo-fx__glint { opacity: .18; }
+/* Reading is deliberate. Touch anywhere to continue, not an automatic slideshow. */
+.evolution-advance { position:absolute; inset:0; width:100%; height:100%; z-index:20; cursor:pointer; border:0; background:transparent !important; color:white; }
+.evolution-advance:focus-visible { outline-offset:-8px !important; }
+.evolution-tap { position:absolute; bottom:max(8%,35px); right:8%; display:flex; align-items:center; gap:16px; font-size:12px; letter-spacing:.18em; text-shadow:0 2px 10px #000; }
+.evolution-tap i { width:26px; height:26px; border:1px solid var(--accent); transform:rotate(45deg); box-shadow:0 0 20px color-mix(in srgb,var(--accent) 50%,transparent); animation:exCorona 2s infinite; }
+.evolution-tap b { color:var(--accent); font-size:24px; }
+.evolution-canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.evolution-art--before { animation:cinemaIdle 12s ease-in-out infinite alternate; opacity:.85; }
+.evolution-shade { background:linear-gradient(0deg,#03040af5,#03040a99 30%,transparent 68%,#03040a66),linear-gradient(90deg,#03040a55,transparent 70%); }
+.evolution-prologue,.evolution-dialogue { bottom:23%; }
+.evolution-prologue p { font-size:clamp(22px,3vw,42px); line-height:1.8; }
+.evolution-dialogue p { font-size:clamp(26px,4vw,56px); }
+.evolution-prologue span,.evolution-dialogue small { display:inline-block; padding:8px 18px; border-left:3px solid var(--accent); background:linear-gradient(90deg,#000a,transparent); }
+.evolution--beat-2 .evolution-dialogue { opacity:0; transform:translateY(-30px); }
+.evolution--beat-2 .evolution-art--before { filter:brightness(.25) saturate(.4); transition:filter 1s; }
+.evolution--beat-3 .evolution-art--before { opacity:.15; }
+.evolution-lens { position:absolute; inset:-30%; pointer-events:none; opacity:0; background:radial-gradient(ellipse at center,transparent 20%,color-mix(in srgb,var(--accent) 35%,transparent) 48%,transparent 65%); }
+.evolution--beat-2 .evolution-lens { animation:cinemaCharge 1.9s ease-in both; }
+.evolution--beat-2 .evolution-seal { animation:cinemaGather 1.9s ease-in both; font-size:min(110vw,110dvh); }
+.evolution--beat-3 .evolution-seal { animation:cinemaRupture 1.35s cubic-bezier(.16,1,.3,1) both; }
+.evolution--beat-3 .evolution-wipe { animation-duration:1.35s; }
+.evolution-closeup { position:absolute; inset:0; pointer-events:none; opacity:0; overflow:hidden; }
+.evolution-closeup img { width:100%; height:100%; object-fit:cover; object-position:50% 32%; transform:scale(1.6); }
+.evolution-closeup span { position:absolute; left:8%; bottom:33%; font:900 clamp(24px,5vw,76px)/1.3 serif; text-shadow:0 3px 20px #000; }
+.evolution--beat-2 .evolution-closeup { animation:cinemaEyeCut 1.9s both; }
+.evolution--beat-3 .evolution-closeup { animation:cinemaSlice 1.35s both; }
+.evolution--beat-4 .evolution-art--after { animation:cinemaArrival 3.3s cubic-bezier(.16,1,.3,1) both; }
+.evolution--beat-4 .evolution-signature { justify-content:flex-end; padding-bottom:12%; font-size:clamp(38px,7.8vw,120px); }
+.evolution--beat-4 .evolution-signature span { animation:cinemaType 1s cubic-bezier(.16,1,.3,1) both; animation-delay:calc(.35s + var(--line) * .35s); }
+.evolution-shockwaves { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.evolution-shockwaves i { position:absolute; left:50%; top:50%; width:60vmin; height:60vmin; border:2px solid var(--accent); border-radius:50%; opacity:0; box-shadow:0 0 35px var(--accent),inset 0 0 20px var(--accent); }
+.evolution--beat-4 .evolution-shockwaves i { animation:cinemaShock 1.8s ease-out both; animation-delay:calc(var(--ring) * .16s); }
+.evolution--beat-5 .evolution-art--after { animation:cinemaVictory 14s ease-in-out infinite alternate; }
+.evolution--beat-5 .evolution-shade { background:linear-gradient(0deg,#03040af5,#03040a99 23%,transparent 70%); }
+/* Camera and reveal choreography follows the character, not just the tint. */
+.evolution--inferno.evolution--beat-3 .evolution-film { animation:cinemaQuake .6s .5s; }
+.evolution--inferno.evolution--beat-4 .evolution-art--after { animation:cinemaInfernoArrival 3.3s cubic-bezier(.16,1,.3,1) both; }
+.evolution--afterglow.evolution--beat-4 .evolution-art--after { animation:cinemaSunArrival 3.3s ease-out both; }
+.evolution--starfall.evolution--beat-4 .evolution-art--after { animation:cinemaStarArrival 3.3s cubic-bezier(.16,1,.3,1) both; }
+.evolution--contour.evolution--beat-4 .evolution-art--after,.evolution--strata-memory.evolution--beat-4 .evolution-art--after { animation:cinemaEarthArrival 3.3s cubic-bezier(.16,1,.3,1) both; }
+.evolution--court-pass.evolution--beat-4 .evolution-art--after { animation:cinemaCourtArrival 3.3s cubic-bezier(.16,1,.3,1) both; }
+.evolution--phase-break.evolution--beat-4 .evolution-art--after { animation:cinemaPhaseArrival 1.6s steps(4) both; }
+@keyframes cinemaIdle { from { transform:scale(1); } to { transform:scale(1.07); } }
+@keyframes cinemaCharge { 0% { opacity:0; transform:scale(2); } 80% { opacity:1; transform:scale(.6); } 100% { opacity:0; transform:scale(.05); } }
+@keyframes cinemaGather { 0% { opacity:0; transform:scale(1.6); filter:blur(20px); } 55% { opacity:.25; } 100% { opacity:.9; transform:scale(.08); filter:blur(0); } }
+@keyframes cinemaRupture { 0% { opacity:1; transform:scale(.08); } 30%,65% { opacity:1; transform:scale(1); } 100% { opacity:0; transform:scale(3); } }
+@keyframes cinemaEyeCut { 0%,15% { opacity:0; clip-path:polygon(0 47%,100% 37%,100% 37%,0 47%); } 25%,65% { opacity:1; clip-path:polygon(0 28%,100% 18%,100% 61%,0 71%); } 90%,100% { opacity:0; clip-path:polygon(0 45%,100% 35%,100% 35%,0 45%); } }
+@keyframes cinemaSlice { 0% { opacity:0; clip-path:inset(50% 0); } 35% { opacity:.65; clip-path:inset(0); transform:scale(1.2); } 100% { opacity:0; clip-path:inset(0); transform:scale(1); } }
+@keyframes cinemaArrival { from { transform:scale(1.4); filter:brightness(1.7); } 40%,100% { transform:scale(1); filter:brightness(1); } }
+@keyframes cinemaInfernoArrival { from { transform:scale(1.6) rotate(-4deg); filter:brightness(2) saturate(1.7); } 30% { transform:scale(1.03) rotate(1deg); } 60%,100% { transform:scale(1); filter:none; } }
+@keyframes cinemaSunArrival { from { transform:scale(1.15); filter:sepia(.8) brightness(1.7); } to { transform:scale(1); filter:none; } }
+@keyframes cinemaStarArrival { from { transform:scale(1.45) rotate(7deg); filter:brightness(1.7); } 70%,100% { transform:scale(1); filter:none; } }
+@keyframes cinemaEarthArrival { from { transform:translateY(22%) scale(1.2); clip-path:inset(90% 0 0); } 40%,100% { transform:none; clip-path:inset(0); } }
+@keyframes cinemaCourtArrival { from { transform:translateX(-40%) scale(1.35) rotate(-7deg); filter:blur(12px); } 35%,100% { transform:none; filter:none; } }
+@keyframes cinemaPhaseArrival { 0% { clip-path:inset(40% 0); transform:translateX(-12%); } 25% { clip-path:inset(0 0 35%); transform:translateX(8%); } 50% { clip-path:inset(30% 0 0); transform:translateX(-4%); } 100% { clip-path:inset(0); transform:none; } }
+@keyframes cinemaShock { from { transform:translate(-50%,-50%) scale(.05); opacity:.8; } to { transform:translate(-50%,-50%) scale(4); opacity:0; } }
+@keyframes cinemaVictory { from { transform:scale(1); } to { transform:scale(1.04); } }
+@media(max-width:600px) { .evolution--beat-4 .evolution-signature { font-size:clamp(32px,8vw,48px); padding:0 5% 24%; }.evolution-tap { font-size:10px; gap:12px; }.evolution-prologue p { font-size:22px; } }
+@media(max-height:500px) { .evolution-prologue p { font-size:20px; line-height:1.5; }.evolution-dialogue p { font-size:24px; }.evolution-prologue,.evolution-dialogue { bottom:26%; }.evolution--beat-4 .evolution-signature { font-size:9vh; padding-bottom:8%; } }
+@media(prefers-reduced-motion:reduce) {
+  .evolution *, .ex-living-icon>img, .unit-evo-fx * { animation:none !important; transition:none !important; }
+  .evolution--beat-2 .evolution-seal { opacity:.25; }
+  .evolution-closeup,.evolution-lens { display:none; }
+  .unit-evo-fx__signature { opacity:.5; }
 }

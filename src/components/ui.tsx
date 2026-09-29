@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useId } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { ItemDef, Rarity, UnitDef, UnitType } from '../game/types';
 
 export const RARITY_STYLE: Record<Rarity, { text: string; border: string; bg: string; label: string; chip: string }> = {
@@ -36,7 +37,7 @@ export function UnitIcon({ def, size = 56, dim = false, className = '' }: { def:
   const r = RARITY_STYLE[def.rarity];
   return (
     <div
-      className={`relative shrink-0 overflow-hidden rounded-xl border-2 ${r.border} bg-gradient-to-br ${r.bg} flex items-center justify-center ${dim ? 'opacity-40 grayscale' : ''} ${className}`}
+      className={`relative shrink-0 overflow-hidden rounded-xl border-2 ${r.border} bg-gradient-to-br ${r.bg} flex items-center justify-center ${dim ? 'opacity-40 grayscale' : ''} ${def.evolutionEffect && !dim ? `ex-living-icon ex-living-icon--${def.evolutionEffect}` : ''} ${className}`}
       style={{ width: size, height: size }}
     >
       {def.portrait && !dim ? (
@@ -53,11 +54,26 @@ export function UnitIcon({ def, size = 56, dim = false, className = '' }: { def:
 }
 
 export function EvolutionAura({ effect, active = true }: { effect: NonNullable<UnitDef['evolutionEffect']>; active?: boolean }) {
+  const flameId = useId();
   return (
     <div className={`unit-evo-fx unit-evo-fx--${effect} ${active ? 'is-active' : ''}`} aria-hidden="true">
       <span className="unit-evo-fx__layer unit-evo-fx__layer--one" />
       <span className="unit-evo-fx__layer unit-evo-fx__layer--two" />
       <span className="unit-evo-fx__glint" />
+      <span className="unit-evo-fx__corona" />
+      <svg className="unit-evo-fx__signature" viewBox="0 0 100 100" fill="none">
+        {effect === 'inferno' && <defs><linearGradient id={flameId} x1="0" y1="1" x2=".2" y2="0"><stop stopColor="#ff3514" stopOpacity=".15" /><stop offset=".4" stopColor="#ff7027" stopOpacity=".8" /><stop offset=".85" stopColor="#ffcf70" /><stop offset="1" stopColor="#fff2b4" stopOpacity=".2" /></linearGradient></defs>}
+        {effect === 'inferno' ? Array.from({ length: 7 }, (_, i) => <path key={i} className="ex-flame" style={{ '--n': i, fill: `url(#${flameId})` } as CSSProperties} d={`M${i * 17 - 9} 108 Q${i * 17 - 18} 75 ${i * 17 + 4} 48 Q${i * 17 - 2} 76 ${i * 17 + 16} 69 Q${i * 17 + 7} 86 ${i * 17 + 22} 108Z`} />)
+        : effect === 'afterglow' ? <><path className="ex-sunbeam" d="M-20 0 L20 0 L110 90 L110 115Z" /><g className="ex-equations"><text x="5" y="28">∫ dx</text><text x="60" y="84">∑ x²</text><text x="74" y="20">∞</text></g></>
+        : effect === 'starfall' ? <><ellipse className="ex-orbit" cx="50" cy="50" rx="60" ry="23" transform="rotate(-35 50 50)" /><g className="ex-stars">{[0,1,2,3].map(i => <path key={i} style={{ '--n': i } as CSSProperties} d={`M${15+i*23} ${12+i*20} l2 7 7 2 -7 2 -2 7 -2 -7 -7 -2 7 -2Z`} />)}</g><path className="ex-comet" d="M-20 80 L120 5" /></>
+        : effect === 'court-pass' ? <><path className="ex-pass" d="M-30 115 Q30 60 130 5 M-30 128 Q35 73 130 18" /><circle className="ex-ball" cx="50" cy="50" r="9" /><path className="ex-court" d="M0 85 L100 55 M5 100 L25 0" /></>
+        : effect === 'phase-break' ? <><path className="ex-fault" d="M0 18 H70 L30 45 H100 M0 75 H40 L80 55 H100" /><path className="ex-fault ex-fault--echo" d="M0 25 H80 L40 52 H100 M0 82 H50 L90 62 H100" /></>
+        : <>{[0,1,2,3,4].map(i => <path key={i} className="ex-land" style={{ '--n': i } as CSSProperties} d={`M-10 ${50+i*12} Q15 ${15+i*12} 40 ${50+i*8} T110 ${30+i*12}`} />)}<path className="ex-faultline" d="M0 95 L25 70 L40 76 L55 47 L70 52 L100 15" /></>}
+      </svg>
+      <svg className="unit-evo-fx__trails" viewBox="0 0 100 100" fill="none">
+        <path className="unit-evo-fx__trace" d={effect === 'court-pass' ? 'M-20 95 Q35 80 120 10 M-20 80 Q40 65 120 -5' : effect === 'contour' || effect === 'strata-memory' ? 'M-10 80 Q20 40 45 65 T110 40 M-10 90 Q20 50 45 75 T110 50 M-10 70 Q20 30 45 55 T110 30' : effect === 'starfall' ? 'M10 80 L30 25 L60 45 L85 10 M30 25 L80 85' : effect === 'afterglow' ? 'M5 80 Q35 10 60 65 T110 20' : effect === 'inferno' ? 'M10 110 Q40 60 15 40 Q55 65 40 0 M55 110 Q90 60 70 20' : 'M0 30 H70 V45 H20 V60 H100'} />
+      </svg>
+      {Array.from({ length: 6 }, (_, i) => <i key={i} className="unit-evo-fx__spark" style={{ left: `${12 + i * 15}%`, animationDelay: `${i * -.7}s` }} />)}
     </div>
   );
 }

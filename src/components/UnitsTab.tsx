@@ -293,6 +293,7 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const [showAwakening, setShowAwakening] = useState(false);
   const [showBond, setShowBond] = useState(false);
   const [showBefore, setShowBefore] = useState(false);
+  const [showArtwork, setShowArtwork] = useState(false);
   const [showEvolution, setShowEvolution] = useState(false);
 
   const evolved = !!s.evolvedUnits?.[id];
@@ -352,7 +353,8 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
       <Modal open onClose={onClose} wide>
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="flex flex-col items-center sm:w-48">
-            <UnitIcon def={iconDef} size={150} />
+            <button type="button" onClick={() => setShowArtwork(true)} aria-label="イラストを拡大" className="cursor-zoom-in"><UnitIcon def={iconDef} size={150} /></button>
+            <Btn small variant="ghost" className="mt-2" onClick={() => setShowArtwork(true)}>イラストを拡大</Btn>
             {evolved && <Btn small variant="ghost" className="mt-2" onClick={() => setShowBefore((v) => !v)}>{showBefore ? 'EXの姿に戻す' : '進化前の立ち絵を見る'}</Btn>}
             <div className="mt-2 flex gap-1">
               <RarityBadge r={def.rarity} />
@@ -435,13 +437,14 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
                     </div>
                     <div className="mt-1 text-xs text-slate-300">{evolved ? `EX進化済み：${evolution.title}` : evolution.title}</div>
                   </div>
-                  <div className="rounded-full border border-cyan-200/30 bg-cyan-300/10 px-2 py-1 text-[10px] font-bold text-cyan-100">固有演出 / CHARACTER CG</div>
+                  <div className="rounded-full border border-cyan-200/30 bg-cyan-300/10 px-2 py-1 text-[10px] font-bold text-cyan-100">EX / AWAKENING</div>
                 </div>
                 <p className="relative mt-2 text-xs leading-relaxed text-slate-300">{evolution.desc}</p>
                 {evolved ? (
                   <div className="relative mt-2 rounded-lg border border-cyan-200/20 bg-black/25 px-2.5 py-2 text-xs text-cyan-100">
+                    <Btn small variant="gold" className="mb-2 w-full" onClick={() => setShowEvolution(true)}>▶ 進化演出をもう一度観る</Btn>
                     <span className="mr-1.5 font-black">EX / PASSIVE</span>{evolution.passive.desc}
-                    <div className="mt-1 text-[10px] text-slate-400">進化前の立ち絵は左の切替ボタンからいつでも閲覧できます。</div>
+                    <div className="mt-1 text-[10px] text-slate-400">進化前の立ち絵も切替ボタンからいつでも閲覧できます。</div>
                   </div>
                 ) : (
                   <>
@@ -458,7 +461,7 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
                       <div className="mt-0.5 text-slate-300">初回勝利で1個確定、再戦で基本18%ドロップ（ドロップ率ボーナスで最大80%）。ストーリータブから挑戦できます。</div>
                     </div>
                     <Btn variant={canEvolve ? 'gold' : 'ghost'} disabled={!canEvolve} className="relative mt-3 w-full" onClick={() => setShowEvolution(true)}>
-                      ✦ 固有CG演出を開始してEXへ進化
+                      ✦ EXへ進化
                     </Btn>
                     {!canEvolve && <div className="relative mt-1 text-center text-[10px] text-slate-500">完凸と表示中のすべての素材がそろうと進化できます。</div>}
                   </>
@@ -574,8 +577,14 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
 
       {showAwakening && <AwakeningModal unitId={id} onClose={() => setShowAwakening(false)} />}
       {showBond && <BondModal unitId={id} onClose={() => setShowBond(false)} />}
-      {showEvolution && <EvolutionCutscene unitId={id} onComplete={() => {
-        useGame.getState().evolveUnit(id);
+      {showArtwork && <Modal open wide onClose={() => setShowArtwork(false)} title={iconDef.name}>
+        <div className="flex flex-col items-center gap-3">
+          {iconDef.portrait ? <img src={iconDef.portrait} alt={iconDef.name} className="max-h-[72dvh] w-full object-contain" /> : <UnitIcon def={iconDef} size={280} />}
+          {evolved && <Btn variant="ghost" onClick={() => setShowBefore(v => !v)}>{showBefore ? 'EXのイラストへ' : '進化前のイラストへ'}</Btn>}
+        </div>
+      </Modal>}
+      {showEvolution && <EvolutionCutscene unitId={id} replay={evolved} onComplete={() => {
+        if (!evolved) useGame.getState().evolveUnit(id);
         setShowEvolution(false);
       }} />}
     </>
