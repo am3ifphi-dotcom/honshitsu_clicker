@@ -4,7 +4,7 @@ import { createBattle, stepBattle, tap, useSkill as castSkill, applyItem } from 
 import type { BState, Fighter } from '../game/battle';
 import { derive, judge } from '../game/formulas';
 import { BATTLE_ITEMS } from '../game/data/items';
-import { UNIT_MAP } from '../game/data/units';
+import { getUnitForm } from '../game/data/units';
 import type { EnemyDef } from '../game/types';
 import { fmt } from '../game/format';
 import { Bar, UnitIcon } from './ui';
@@ -30,6 +30,7 @@ export default function Battle({ title, rec, enemies, onEnd, onRetreat }: Props)
   const onEndRef = useRef(onEnd);
   const ended = useRef(false);
   const items = useGame((s) => s.items);
+  const evolvedUnits = useGame((s) => s.evolvedUnits);
   const [myDev] = useState(() => derive(useGame.getState()).battleDev);
   const jd = judge(myDev, rec);
 
@@ -90,7 +91,7 @@ export default function Battle({ title, rec, enemies, onEnd, onRetreat }: Props)
   );
 
   const allyCard = (f: Fighter) => {
-    const def = f.unitId ? UNIT_MAP[f.unitId] : undefined;
+    const def = f.unitId ? getUnitForm(f.unitId, !!evolvedUnits?.[f.unitId]) : undefined;
     const ready = !!(f.alive && f.skill && f.gauge >= f.gaugeMax && f.stun <= 0 && !b.over);
     return (
       <button
@@ -116,7 +117,7 @@ export default function Battle({ title, rec, enemies, onEnd, onRetreat }: Props)
   };
 
   const cut = b.cutin;
-  const cutDef = cut?.unitId ? UNIT_MAP[cut.unitId] : undefined;
+  const cutDef = cut?.unitId ? getUnitForm(cut.unitId, !!evolvedUnits?.[cut.unitId]) : undefined;
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/10">

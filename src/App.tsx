@@ -55,8 +55,6 @@ export default function App() {
 
   const cans = useGame((s) => s.cans);
   const tickets = useGame((s) => s.items['ticket'] || 0);
-  const claimedGift = useGame((s) => s.claimedUpdateGift);
-  const lastLogin = useGame((s) => s.lastLoginDate);
   const spAvail = useGame((s) => spTotal(s) - spSpent(s));
   const canRebirth = useGame((s) => s.maxDev >= 60);
   const lastChatId = useGame((s) => (s.chat.length ? s.chat[s.chat.length - 1].id : 0));

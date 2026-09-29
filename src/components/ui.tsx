@@ -8,6 +8,7 @@ export const RARITY_STYLE: Record<Rarity, { text: string; border: string; bg: st
   SSR: { text: 'text-amber-300', border: 'border-amber-400', bg: 'from-amber-600 to-rose-900', label: 'SSR', chip: 'bg-gradient-to-r from-amber-400 to-orange-500 text-black' },
   UR: { text: 'text-pink-200', border: 'border-pink-300', bg: 'from-fuchsia-600 via-sky-600 to-emerald-600', label: 'UR', chip: 'bg-rainbow text-black' },
   LR: { text: 'text-red-300', border: 'border-red-500', bg: 'from-black via-red-950 to-black', label: '✝LR✝', chip: 'bg-black text-red-400 border border-red-500' },
+  EX: { text: 'text-cyan-100', border: 'border-cyan-200', bg: 'from-cyan-300 via-violet-500 to-rose-400', label: 'EX', chip: 'bg-gradient-to-r from-cyan-200 via-violet-300 to-rose-200 text-slate-950' },
 };
 
 export const TYPE_STYLE: Record<UnitType, { color: string; emoji: string; hex: string }> = {
@@ -41,11 +42,22 @@ export function UnitIcon({ def, size = 56, dim = false, className = '' }: { def:
       {def.portrait && !dim ? (
         <img src={def.portrait} alt={def.name} className="h-full w-full object-cover" draggable={false} />
       ) : (
-        <span className={def.rarity === 'LR' && !dim ? 'anim-glitch font-display text-red-400' : ''} style={{ fontSize: size * 0.5, lineHeight: 1 }}>
+        <span className={`unit-icon-glyph ${def.rarity === 'LR' && !dim ? 'anim-glitch text-red-300' : ''} ${def.evolutionEffect === 'phase-break' && !dim ? 'anim-glitch' : ''}`} style={{ fontSize: size * 0.86, lineHeight: 1 }}>
           {dim ? '？' : def.emoji}
         </span>
       )}
       {def.rarity === 'UR' && !dim && <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent" />}
+      {def.evolutionEffect && !dim && <EvolutionAura effect={def.evolutionEffect} />}
+    </div>
+  );
+}
+
+export function EvolutionAura({ effect, active = true }: { effect: NonNullable<UnitDef['evolutionEffect']>; active?: boolean }) {
+  return (
+    <div className={`unit-evo-fx unit-evo-fx--${effect} ${active ? 'is-active' : ''}`} aria-hidden="true">
+      <span className="unit-evo-fx__layer unit-evo-fx__layer--one" />
+      <span className="unit-evo-fx__layer unit-evo-fx__layer--two" />
+      <span className="unit-evo-fx__glint" />
     </div>
   );
 }

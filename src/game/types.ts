@@ -1,4 +1,5 @@
-export type Rarity = 'N' | 'R' | 'SR' | 'SSR' | 'UR' | 'LR';
+export type Rarity = 'N' | 'R' | 'SR' | 'SSR' | 'UR' | 'LR' | 'EX';
+export type EvolutionEffect = 'inferno' | 'afterglow' | 'starfall' | 'contour' | 'court-pass' | 'phase-break' | 'strata-memory';
 export type UnitType = '本質' | '冷笑' | '面白' | '地理' | '恋愛';
 export type SkillKind = 'nuke' | 'aoe' | 'heal' | 'buff' | 'stun' | 'multi' | 'gamble' | 'shield';
 
@@ -83,6 +84,7 @@ export interface UnitDef {
   quote: string;
   desc: string;
   speaker?: string;
+  evolutionEffect?: EvolutionEffect;
 }
 
 export type ConsumableEffect =
@@ -115,7 +117,7 @@ export interface ItemDef {
   name: string;
   emoji: string;
   rarity: Rarity;
-  kind: 'consumable' | 'equip';
+  kind: 'consumable' | 'equip' | 'material';
   desc: string;
   flavor: string;
   scene?: 'battle' | 'field' | 'unit' | 'gacha';
@@ -296,6 +298,7 @@ export interface GameData {
   // 部員新育成要素（本質覚醒 & 放課後絆）
   awakening: Record<string, number>;
   bonds: Record<string, { exp: number; lv: number }>;
+  evolvedUnits: Record<string, boolean>;
   // ログボ＆アプデ記念プレゼント
   claimedUpdateGift: boolean;
   lastLoginDate: string;

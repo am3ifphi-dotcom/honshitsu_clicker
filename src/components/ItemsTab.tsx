@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useGame, shopPrice, lostBoxPrice } from '../game/store';
 import { derive } from '../game/formulas';
 import { ITEMS, ITEM_MAP, EQUIPS, SHOP } from '../game/data/items';
-import { UNIT_MAP } from '../game/data/units';
+import { getUnitForm } from '../game/data/units';
+import { EVOLUTION_FORMS, EVOLUTION_MATERIAL_SOURCES } from '../game/data/evolutions';
 import { fmt } from '../game/format';
 import { Btn, Chip, ItemIcon, Modal, Panel, RarityBadge } from './ui';
 
@@ -14,10 +15,11 @@ export default function ItemsTab() {
   const [sub, setSub] = useState<'inv' | 'shop' | 'box'>('inv');
   const [boxResult, setBoxResult] = useState<string | null>(null);
   const consumables = ITEMS.filter((i) => i.kind === 'consumable');
+  const evolutionMaterials = ITEMS.filter((i) => i.kind === 'material');
   const equippedBy = (itemId: string) =>
     Object.entries(s.units)
       .filter(([, u]) => u.equip === itemId)
-      .map(([id]) => UNIT_MAP[id]?.name)
+      .map(([id]) => getUnitForm(id, !!s.evolvedUnits?.[id])?.name)
       .filter(Boolean);
   const boxPrice = lostBoxPrice(d.perSecBase, s.lostBoxOpened);
   const boxItem = boxResult ? ITEM_MAP[boxResult] : null;
@@ -60,6 +62,29 @@ export default function ItemsTab() {
                     ) : (
                       <span className="w-16 shrink-0 text-center text-[10px] text-slate-400">{SCENE_LABEL[it.scene ?? 'field']}</span>
                     )}
+                  </div>
+                );
+              })}
+            </div>
+          </Panel>
+          <Panel title="✦ EX進化素材">
+            <p className="mb-2 text-[11px] text-slate-400">対象バトルの初回勝利で1個確定。再戦では基本18%でドロップし、ドロップ率ボーナスで上昇（最大80%）。進化には各3個必要です。</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {evolutionMaterials.map((it) => {
+                const count = s.items[it.id] || 0;
+                const form = Object.values(EVOLUTION_FORMS).find((entry) => entry.cost.materialId === it.id);
+                const source = EVOLUTION_MATERIAL_SOURCES[it.id];
+                return (
+                  <div key={it.id} className={`flex items-center gap-2 rounded-xl border p-2 ${count > 0 ? 'border-cyan-300/30 bg-cyan-950/25' : 'border-white/10 bg-black/30 opacity-75'}`}>
+                    <ItemIcon item={it} size={42} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1 text-sm font-bold">
+                        <span className="truncate">{it.name}</span>
+                        <span className="shrink-0 text-cyan-200">×{count}/{form?.cost.materialCount ?? 3}</span>
+                      </div>
+                      <div className="text-[10px] leading-tight text-slate-300">入手先：{source?.label ?? '関連バトル'}</div>
+                      <div className="truncate text-[10px] italic text-slate-500">{it.flavor}</div>
+                    </div>
                   </div>
                 );
               })}

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import type { Line } from '../game/types';
 import { SPEAKERS } from '../game/data/chatter';
-import { UNIT_MAP } from '../game/data/units';
+import { getUnitForm } from '../game/data/units';
+import { useGame } from '../game/store';
 import bg from '../assets/img/title.jpg';
 
 export default function Dialogue({ title, lines, onDone, doneLabel = '次へ' }: { title: string; lines: Line[]; onDone: () => void; doneLabel?: string }) {
   const [i, setI] = useState(0);
+  const evolvedUnits = useGame((state) => state.evolvedUnits);
   const [s, t] = lines[Math.min(i, lines.length - 1)];
   const sp = SPEAKERS[s] || SPEAKERS.narr;
-  const unit = sp.unit ? UNIT_MAP[sp.unit] : undefined;
+  const unit = sp.unit ? getUnitForm(sp.unit, !!evolvedUnits?.[sp.unit]) : undefined;
   const isNarr = s === 'narr' || s === 'sys';
   const last = i >= lines.length - 1;
   const next = () => {

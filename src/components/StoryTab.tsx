@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useGame } from '../game/store';
 import { derive, judge } from '../game/formulas';
 import { CHAPTERS } from '../game/data/story';
-import { UNIT_MAP } from '../game/data/units';
+import { getUnitForm } from '../game/data/units';
 import { ITEM_MAP } from '../game/data/items';
+import { EVOLUTION_BATTLE_DROPS } from '../game/data/evolutions';
 import type { Chapter, RewardSummary } from '../game/types';
 import Dialogue from './Dialogue';
 import Battle from './Battle';
@@ -105,7 +106,8 @@ export default function StoryTab() {
               const unlocked = idx === 0 || !!s.story[CHAPTERS[idx - 1].id];
               const done = !!s.story[ch.id];
               const j = judge(d.battleDev, ch.rec);
-              const unit = ch.reward.unit ? UNIT_MAP[ch.reward.unit] : undefined;
+              const unit = ch.reward.unit ? getUnitForm(ch.reward.unit, !!s.evolvedUnits?.[ch.reward.unit]) : undefined;
+              const evoDrop = EVOLUTION_BATTLE_DROPS[ch.id] ? ITEM_MAP[EVOLUTION_BATTLE_DROPS[ch.id]] : undefined;
               return (
                 <div
                   key={ch.id}
@@ -127,6 +129,7 @@ export default function StoryTab() {
                           {unit && ` ・${unit.name}加入`}
                           {ch.reward.items &&
                             Object.entries(ch.reward.items).map(([id, n]) => ` ・${ITEM_MAP[id]?.emoji ?? ''}${ITEM_MAP[id]?.name ?? id}×${n}`)}
+                          {evoDrop && ` ・✦${evoDrop.name}×1（進化素材・確定）`}
                           {' ・SP+1'}
                         </div>
                       )}

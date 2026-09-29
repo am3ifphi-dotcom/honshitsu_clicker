@@ -1,4 +1,5 @@
 import type { UnitDef } from '../types';
+import { EVOLUTION_FORMS } from './evolutions';
 import ryomaImg from '../../assets/img/ryoma.jpg';
 import mieImg from '../../assets/img/mie.jpg';
 import reiImg from '../../assets/img/rei.jpg';
@@ -345,3 +346,33 @@ export const UNITS: UnitDef[] = [
 ];
 
 export const UNIT_MAP: Record<string, UnitDef> = Object.fromEntries(UNITS.map((u) => [u.id, u]));
+
+/** 所持状態に応じた現在の姿。図鑑・戦闘・生産計算で共通して使う。 */
+export function getUnitForm(id: string, evolved = false): UnitDef | undefined {
+  const base = UNIT_MAP[id];
+  if (!base || !evolved) return base;
+  const form = EVOLUTION_FORMS[id];
+  if (!form) return base;
+
+  return {
+    ...base,
+    name: form.name,
+    title: form.title,
+    rarity: 'EX',
+    emoji: form.emoji ?? base.emoji,
+    portrait: form.portrait ?? base.portrait,
+    atk: Math.round(base.atk * form.stats.atk),
+    hp: Math.round(base.hp * form.stats.hp),
+    spd: base.spd * form.stats.spd,
+    prod: Math.round(base.prod * form.stats.prod),
+    skill: {
+      ...base.skill,
+      ...form.skill,
+      power: form.skill.power ?? base.skill.power * form.stats.skill,
+    },
+    passive: form.passive,
+    quote: form.quote,
+    desc: form.desc,
+    evolutionEffect: form.effect,
+  };
+}

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useGame } from '../game/store';
 import { computeMods, gachaRates, pityMax, rarityRank, RARITIES } from '../game/formulas';
-import { UNITS, UNIT_MAP } from '../game/data/units';
+import { UNITS, UNIT_MAP, getUnitForm } from '../game/data/units';
 import { ITEM_MAP, EQUIPS } from '../game/data/items';
 import { GACHA_POOLS, POOL_MAP } from '../game/data/gacha';
-import type { GachaPoolId, PullResult, Rarity } from '../game/types';
+import type { GachaPoolId, PullResult } from '../game/types';
 import { Btn, Modal, Panel, RarityBadge, UnitIcon, ItemIcon, RARITY_STYLE, TypeBadge } from './ui';
 import RevealCutscene from './RevealCutscene';
 import { fmt, pct } from '../game/format';
@@ -209,7 +209,7 @@ export default function GachaTab() {
                   );
                 })
               : currentPool.featuredIds.slice(0, 5).map((id) => {
-                  const u = UNIT_MAP[id];
+                  const u = getUnitForm(id, !!s.evolvedUnits?.[id]);
                   if (!u) return null;
                   return (
                     <div key={id} className="flex flex-col items-center rounded-lg bg-white/10 p-1">
@@ -420,7 +420,7 @@ export default function GachaTab() {
                     </div>
                   );
                 }
-                const u = UNIT_MAP[r.id];
+                const u = getUnitForm(r.id, !!s.evolvedUnits?.[r.id]);
                 if (!u) return null;
                 return (
                   <div
@@ -618,7 +618,7 @@ export default function GachaTab() {
                   );
                 }
 
-                const u = UNIT_MAP[r.id];
+                const u = getUnitForm(r.id, !!s.evolvedUnits?.[r.id]);
                 if (!u) return null;
                 return (
                   <div

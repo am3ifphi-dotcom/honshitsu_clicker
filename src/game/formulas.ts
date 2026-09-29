@@ -1,18 +1,21 @@
 import type { GameData, Mods, ModPatch, OwnedUnit, Rarity, UnitDef, UnitType } from './types';
 import { SKILL_NODES, PRESTIGE, NODE_MAP, ULTRA_PRESTIGE } from './data/skills';
-import { UNIT_MAP } from './data/units';
+import { getUnitForm } from './data/units';
 import { ITEM_MAP } from './data/items';
 import { FACILITIES } from './data/facilities';
 import { getUnitAwakenings } from './data/awakening';
 
 export const TYPES: UnitType[] = ['本質', '冷笑', '面白', '地理', '恋愛'];
-export const RARITIES: Rarity[] = ['N', 'R', 'SR', 'SSR', 'UR', 'LR'];
+export const RARITIES: Rarity[] = ['N', 'R', 'SR', 'SSR', 'UR', 'LR', 'EX'];
 export const rarityRank = (r: Rarity) => RARITIES.indexOf(r);
 
-export const RARITY_COST: Record<Rarity, number> = { N: 8, R: 20, SR: 50, SSR: 120, UR: 300, LR: 800 };
-export const RARITY_PROD_PCT: Record<Rarity, number> = { N: 0.01, R: 0.03, SR: 0.08, SSR: 0.20, UR: 0.50, LR: 1.00 };
-export const RARITY_REFUND: Record<Rarity, number> = { N: 2, R: 5, SR: 15, SSR: 40, UR: 100, LR: 250 };
-export const RARITY_CRYSTALS: Record<Rarity, number> = { N: 1, R: 3, SR: 8, SSR: 25, UR: 80, LR: 200 };
+export const RARITY_COST: Record<Rarity, number> = { N: 8, R: 20, SR: 50, SSR: 120, UR: 300, LR: 800, EX: 1400 };
+export const RARITY_PROD_PCT: Record<Rarity, number> = { N: 0.01, R: 0.03, SR: 0.08, SSR: 0.20, UR: 0.50, LR: 1.00, EX: 1.5 };
+
+// 缶の重複還元は0。結晶還元と交換所価格も上限を設定し、最悪の連続LRでも自己増殖しない。
+export const RARITY_REFUND: Record<Rarity, number> = { N: 0, R: 0, SR: 0, SSR: 0, UR: 0, LR: 0, EX: 0 };
+export const RARITY_CRYSTALS: Record<Rarity, number> = { N: 0, R: 0, SR: 0, SSR: 1, UR: 2, LR: 3, EX: 0 };
+export const crystalReturnMultiplier = (m: Mods) => 1 + Math.min(1, Math.max(0, m.crystalBonus || 0));
 
 export const BASE_MAX_STAR = 15;
 export const getMaxStar = (m: Mods) => BASE_MAX_STAR + (m.maxStarBonus || 0);
@@ -70,7 +73,7 @@ export function computeMods(s: GameData): Mods {
     }
   }
   for (const id of Object.keys(s.units)) {
-    const def = UNIT_MAP[id];
+    const def = getUnitForm(id, !!s.evolvedUnits?.[id]);
     if (!def) continue;
     if (def.passive.scope === 'owned' || s.party.includes(id)) addMods(m, def.passive.mods);
   }
@@ -180,7 +183,7 @@ export function derive(s: GameData): Derived {
   let unitFlat = 0;
   let unitGlobal = 0;
   for (const id of Object.keys(s.units)) {
-    const def = UNIT_MAP[id];
+    const def = getUnitForm(id, !!s.evolvedUnits?.[id]);
     if (!def) continue;
     const u = s.units[id];
     unitFlat += unitStats(def, u, m, s).prod;
@@ -194,7 +197,7 @@ export function derive(s: GameData): Derived {
   let power = 0;
   for (const id of s.party) {
     if (!id) continue;
-    const def = UNIT_MAP[id];
+    const def = getUnitForm(id, !!s.evolvedUnits?.[id]);
     const u = s.units[id];
     if (!def || !u) continue;
     power += unitStats(def, u, m, s).power;
@@ -298,7 +301,7 @@ export function gachaRates(m: Mods): Record<Rarity, number> {
   const SR = 0.22;
   const R = 0.35;
   const N = Math.max(0, 1 - LR - UR - SSR - SR - R);
-  return { N, R, SR, SSR, UR, LR };
+  return { N, R, SR, SSR, UR, LR, EX: 0 };
 }
 
 export function pityMax(m: Mods) {

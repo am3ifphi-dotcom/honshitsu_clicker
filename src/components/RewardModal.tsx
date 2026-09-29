@@ -1,6 +1,7 @@
 import type { RewardSummary } from '../game/types';
 import { ITEM_MAP } from '../game/data/items';
-import { UNIT_MAP } from '../game/data/units';
+import { getUnitForm } from '../game/data/units';
+import { useGame } from '../game/store';
 import { fmt } from '../game/format';
 import { Btn, ItemIcon, Modal, UnitIcon } from './ui';
 
@@ -15,8 +16,9 @@ function Row({ icon, label, value }: { icon: string; label: string; value: strin
 }
 
 export default function RewardModal({ rw, title, onClose }: { rw: RewardSummary | null; title: string; onClose: () => void }) {
+  const evolvedUnits = useGame((s) => s.evolvedUnits);
   if (!rw) return null;
-  const unit = rw.unit ? UNIT_MAP[rw.unit] : undefined;
+  const unit = rw.unit ? getUnitForm(rw.unit, !!evolvedUnits?.[rw.unit]) : undefined;
   return (
     <Modal open onClose={onClose} title={title}>
       {rw.first && <div className="mb-2 rounded-lg bg-amber-500/20 px-2 py-1 text-center text-xs font-bold text-amber-200">🎉 初回クリア報酬！</div>}

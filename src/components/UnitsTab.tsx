@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useGame } from '../game/store';
 import { computeMods, derive, levelCap, powerToDev, rarityRank, unitLevelCost, unitStats, RARITIES, TYPES, getMaxStar } from '../game/formulas';
-import { UNITS, UNIT_MAP } from '../game/data/units';
+import { UNITS, UNIT_MAP, getUnitForm } from '../game/data/units';
+import { EVOLUTION_FORMS } from '../game/data/evolutions';
 import { ITEM_MAP, EQUIPS } from '../game/data/items';
 import { getUnitAwakenings, BOND_VOICES, CRYSTAL_SHOP } from '../game/data/awakening';
 import type { Rarity, UnitType } from '../game/types';
-import { fmt, pct } from '../game/format';
+import { fmt } from '../game/format';
 import { Btn, Chip, ItemIcon, Modal, Panel, RarityBadge, Stars, TypeBadge, UnitIcon } from './ui';
 import { sfx } from '../utils/sfx';
+import EvolutionCutscene from './EvolutionCutscene';
 
 const SKILL_KIND: Record<string, string> = {
   nuke: '単体攻撃',
@@ -28,7 +30,7 @@ function equipText(id: string) {
 // ───────── 本質覚醒モーダル ─────────
 function AwakeningModal({ unitId, onClose }: { unitId: string; onClose: () => void }) {
   const s = useGame();
-  const def = UNIT_MAP[unitId];
+  const def = getUnitForm(unitId, !!s.evolvedUnits?.[unitId]);
   const u = s.units[unitId];
   const currentStage = s.awakening[unitId] || 0;
   const stages = getUnitAwakenings(unitId);
@@ -131,7 +133,7 @@ function AwakeningModal({ unitId, onClose }: { unitId: string; onClose: () => vo
 // ───────── 放課後絆（親愛度）モーダル ─────────
 function BondModal({ unitId, onClose }: { unitId: string; onClose: () => void }) {
   const s = useGame();
-  const def = UNIT_MAP[unitId];
+  const def = getUnitForm(unitId, !!s.evolvedUnits?.[unitId]);
   const u = s.units[unitId];
   const bond = s.bonds[unitId] || { exp: 0, lv: 1 };
   const voices = BOND_VOICES[unitId] || [
@@ -290,8 +292,13 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const [picking, setPicking] = useState(false);
   const [showAwakening, setShowAwakening] = useState(false);
   const [showBond, setShowBond] = useState(false);
+  const [showBefore, setShowBefore] = useState(false);
+  const [showEvolution, setShowEvolution] = useState(false);
 
-  const def = UNIT_MAP[id];
+  const evolved = !!s.evolvedUnits?.[id];
+  const def = getUnitForm(id, evolved);
+  const baseDef = UNIT_MAP[id];
+  const evolution = EVOLUTION_FORMS[id];
   const u = s.units[id];
   const m = computeMods(s);
 
@@ -333,13 +340,19 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const maxStar = getMaxStar(m);
   const awakenStage = s.awakening[id] || 0;
   const bond = s.bonds[id] || { exp: 0, lv: 1 };
+  const evolutionMaterial = evolution ? ITEM_MAP[evolution.cost.materialId] : undefined;
+  const evolutionMaterialCount = evolution ? (s.items[evolution.cost.materialId] || 0) : 0;
+  const evolutionCanPay = !!evolution && s.cans >= evolution.cost.cans && s.crystals >= evolution.cost.crystals && s.cores >= evolution.cost.cores && s.memories >= evolution.cost.memories && evolutionMaterialCount >= evolution.cost.materialCount;
+  const canEvolve = !!evolution && !evolved && u.star >= maxStar && evolutionCanPay;
+  const iconDef = evolved && showBefore && baseDef ? baseDef : def;
 
   return (
     <>
       <Modal open onClose={onClose} wide>
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="flex flex-col items-center sm:w-48">
-            <UnitIcon def={def} size={150} />
+            <UnitIcon def={iconDef} size={150} />
+            {evolved && <Btn small variant="ghost" className="mt-2" onClick={() => setShowBefore((v) => !v)}>{showBefore ? 'EXの姿に戻す' : '進化前の立ち絵を見る'}</Btn>}
             <div className="mt-2 flex gap-1">
               <RarityBadge r={def.rarity} />
               <TypeBadge t={def.type} />
@@ -409,6 +422,45 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
               </span>
               {def.passive.desc}
             </div>
+
+            {evolution && (
+              <div className="relative overflow-hidden rounded-2xl border border-cyan-200/40 bg-gradient-to-br from-cyan-950/70 via-violet-950/50 to-rose-950/60 p-3 shadow-[0_0_28px_rgba(34,211,238,0.12)]">
+                <div className="pointer-events-none absolute -right-8 -top-12 h-36 w-36 rounded-full bg-cyan-300/10 blur-2xl" />
+                <div className="relative flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200/80">Limit Break / Evolution</div>
+                    <div className="mt-0.5 flex items-center gap-2 font-display text-lg">
+                      <span>LR</span><span className="text-cyan-200">⟶</span><RarityBadge r="EX" />
+                    </div>
+                    <div className="mt-1 text-xs text-slate-300">{evolved ? `EX進化済み：${evolution.title}` : evolution.title}</div>
+                  </div>
+                  <div className="rounded-full border border-cyan-200/30 bg-cyan-300/10 px-2 py-1 text-[10px] font-bold text-cyan-100">固有演出 / CHARACTER CG</div>
+                </div>
+                <p className="relative mt-2 text-xs leading-relaxed text-slate-300">{evolution.desc}</p>
+                {evolved ? (
+                  <div className="relative mt-2 rounded-lg border border-cyan-200/20 bg-black/25 px-2.5 py-2 text-xs text-cyan-100">
+                    <span className="mr-1.5 font-black">EX / PASSIVE</span>{evolution.passive.desc}
+                    <div className="mt-1 text-[10px] text-slate-400">進化前の立ち絵は左の切替ボタンからいつでも閲覧できます。</div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative mt-3 grid grid-cols-2 gap-1.5 text-[10px] sm:grid-cols-3">
+                      <span className={u.star >= maxStar ? 'text-emerald-300' : 'text-rose-300'}>完凸 ★{maxStar}（現在 ★{u.star}）</span>
+                      <span className={s.cans >= evolution.cost.cans ? 'text-emerald-300' : 'text-rose-300'}>🥫 {s.cans.toLocaleString()}/{evolution.cost.cans.toLocaleString()}</span>
+                      <span className={s.crystals >= evolution.cost.crystals ? 'text-emerald-300' : 'text-rose-300'}>💎 {s.crystals}/{evolution.cost.crystals}</span>
+                      <span className={s.cores >= evolution.cost.cores ? 'text-emerald-300' : 'text-rose-300'}>🌌 {s.cores}/{evolution.cost.cores}</span>
+                      <span className={s.memories >= evolution.cost.memories ? 'text-emerald-300' : 'text-rose-300'}>🌏 {s.memories.toLocaleString()}/{evolution.cost.memories}</span>
+                      <span className={evolutionMaterialCount >= evolution.cost.materialCount ? 'text-emerald-300' : 'text-rose-300'}>{evolutionMaterial?.emoji ?? '✦'} {evolutionMaterialCount}/{evolution.cost.materialCount} {evolutionMaterial?.name ?? '専用素材'}</span>
+                    </div>
+                    <div className="relative mt-1 text-[10px] text-slate-400">専用素材は関連バトル初回勝利で1個確定、再戦でもドロップします。</div>
+                    <Btn variant={canEvolve ? 'gold' : 'ghost'} disabled={!canEvolve} className="relative mt-3 w-full" onClick={() => setShowEvolution(true)}>
+                      ✦ 固有CG演出を開始してEXへ進化
+                    </Btn>
+                    {!canEvolve && <div className="relative mt-1 text-center text-[10px] text-slate-500">完凸と表示中のすべての素材がそろうと進化できます。</div>}
+                  </>
+                )}
+              </div>
+            )}
 
             {/* 装備 */}
             <div className="rounded-xl border border-white/10 bg-black/30 p-2">
@@ -518,6 +570,10 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
 
       {showAwakening && <AwakeningModal unitId={id} onClose={() => setShowAwakening(false)} />}
       {showBond && <BondModal unitId={id} onClose={() => setShowBond(false)} />}
+      {showEvolution && <EvolutionCutscene unitId={id} onComplete={() => {
+        useGame.getState().evolveUnit(id);
+        setShowEvolution(false);
+      }} />}
     </>
   );
 }
@@ -540,17 +596,19 @@ export default function UnitsTab() {
   const [showCrystalShop, setShowCrystalShop] = useState(false);
 
   const ownedCount = Object.keys(s.units).length;
-  const list = UNITS.filter((u) => {
-    if (filter === 'all') return true;
-    if (filter === 'owned') return !!s.units[u.id];
-    if ((RARITIES as string[]).includes(filter)) return u.rarity === filter;
-    return u.type === filter;
-  }).sort((a, b) => {
-    const oa = s.units[a.id] ? 1 : 0;
-    const ob = s.units[b.id] ? 1 : 0;
-    if (oa !== ob) return ob - oa;
-    return rarityRank(b.rarity) - rarityRank(a.rarity);
-  });
+  const list = UNITS.map((base) => getUnitForm(base.id, !!s.evolvedUnits?.[base.id]) ?? base)
+    .filter((u) => {
+      if (filter === 'all') return true;
+      if (filter === 'owned') return !!s.units[u.id];
+      if ((RARITIES as string[]).includes(filter)) return u.rarity === filter;
+      return u.type === filter;
+    })
+    .sort((a, b) => {
+      const oa = s.units[a.id] ? 1 : 0;
+      const ob = s.units[b.id] ? 1 : 0;
+      if (oa !== ob) return ob - oa;
+      return rarityRank(b.rarity) - rarityRank(a.rarity);
+    });
 
   return (
     <div className="space-y-3">
@@ -570,7 +628,7 @@ export default function UnitsTab() {
       >
         <div className="grid grid-cols-4 gap-2">
           {s.party.map((pid, i) => {
-            const def = pid ? UNIT_MAP[pid] : null;
+            const def = pid ? getUnitForm(pid, !!s.evolvedUnits?.[pid]) : null;
             const u = pid ? s.units[pid] : null;
             return (
               <button
