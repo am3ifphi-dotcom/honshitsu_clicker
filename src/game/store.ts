@@ -29,6 +29,7 @@ export interface BattleCtx {
 
 interface Actions {
   init: () => number;
+  maxEverything: () => void;
   save: () => void;
   tick: () => void;
   click: () => { amount: number; crit: boolean };
@@ -238,6 +239,7 @@ function setupDebugCommands(set: any, get: any) {
   if (typeof window === 'undefined') return;
 
   const commands = {
+    maxEverything: () => get().maxEverything(),
     addHonshitsu: (n = 1e30) => {
       const amount = debugAmount(n, 1e30);
       set((s: GameData) => ({ honshitsu: s.honshitsu + amount, totalEarned: s.totalEarned + amount, allTimeEarned: s.allTimeEarned + amount }));
@@ -324,6 +326,46 @@ function setupDebugCommands(set: any, get: any) {
 
 export const useGame = create<GameStore>()((set, get) => ({
   ...fresh(),
+
+  maxEverything: () => {
+    const s = get();
+    // Keep the original pre-cheat save even when the command is repeated.
+    try {
+      const key = SAVE_KEY + '-before-max-everything';
+      if (!localStorage.getItem(key)) localStorage.setItem(key, serialize(s));
+    } catch {
+      s.toast('バックアップを保存できなかったため、全強化を中止しました', 'bad');
+      return;
+    }
+    const maxRanks = (defs: Record<string, { max: number }>) =>
+      Object.fromEntries(Object.entries(defs).map(([id, def]) => [id, def.max]));
+    const units = { ...s.units };
+    for (const def of UNITS) units[def.id] = { level: 1, star: 0, equip: s.units[def.id]?.equip ?? null };
+    const enhanced = {
+      ...s, units,
+      skills: maxRanks(NODE_MAP),
+      prestige: maxRanks(PRESTIGE_MAP),
+      ultraPrestige: maxRanks(ULTRA_PRESTIGE_MAP),
+      awakening: Object.fromEntries(UNITS.map(def => [def.id, getUnitAwakenings(def.id).length])),
+      bonds: Object.fromEntries(UNITS.map(def => [def.id, { lv: 10, exp: 0 }])),
+      evolvedUnits: { ...s.evolvedUnits, ...Object.fromEntries(Object.keys(EVOLUTION_FORMS).map(id => [id, true])) },
+    };
+    // Compute caps only AFTER all cap-raising passives and upgrades are enabled.
+    const maxStar = getMaxStar(computeMods(enhanced));
+    for (const def of UNITS) units[def.id].star = maxStar;
+    const mods = computeMods(enhanced);
+    for (const def of UNITS) units[def.id].level = levelCap(units[def.id], mods);
+    set({
+      units, skills: enhanced.skills, prestige: enhanced.prestige, ultraPrestige: enhanced.ultraPrestige,
+      awakening: enhanced.awakening, bonds: enhanced.bonds, evolvedUnits: enhanced.evolvedUnits,
+      // Facilities have no upper bound: use a finite testing target instead of Infinity.
+      facilities: Object.fromEntries(Object.keys(FAC_MAP).map(id => [id, Math.max(s.facilities[id] || 0, 1000)])),
+      items: { ...s.items, ...Object.fromEntries(Object.keys(ITEM_MAP).map(id => [id, Math.max(s.items[id] || 0, 9999)])) },
+      bonusSP: Math.max(s.bonusSP, spSpent(enhanced)),
+    });
+    get().save();
+    get().toast('✝ 全強化完了：全部員完凸・Lv最大・覚醒・絆MAX・EX進化／全スキル・永続強化MAX', 'rare');
+  },
 
   init: () => {
     if (initialized) return 0;

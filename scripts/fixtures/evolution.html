@@ -1,0 +1,6 @@
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module">
+import React from 'react';import {createRoot} from 'react-dom/client';import Evolution from '/src/components/EvolutionCutscene.tsx';import {UnitIcon} from '/src/components/ui.tsx';import {getUnitForm} from '/src/game/data/units.ts';import '/src/index.css';
+const ids=['ex_ryoma','ex_rei','ex_terachi','ex_heikatsu','ex_mie','pregen','jimen'];
+const params=new URLSearchParams(location.search);
+createRoot(document.getElementById('root')).render(params.has('icons') ? React.createElement('div',{style:{display:'flex',gap:24,padding:30,background:'#12121e',flexWrap:'wrap'}},...ids.flatMap(id=>[56,150].map(size=>React.createElement(UnitIcon,{key:id+size,def:getUnitForm(id,true),size})))) : React.createElement(Evolution,{unitId:params.get('id')||'ex_ryoma',replay:true,onComplete:()=>{window.completed=(window.completed||0)+1;}}));
+</script></body></html>

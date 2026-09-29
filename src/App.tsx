@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from './game/store';
+import { installDebugShortcut, isLocalDebugEnvironment } from './utils/debugShortcut';
 import { derive, spTotal, spSpent } from './game/formulas';
 import { CHAPTERS } from './game/data/story';
 import { THREADS } from './game/data/chatter';
@@ -106,6 +107,11 @@ export default function App() {
   useEffect(() => {
     if (chatOpen) setSeenId(lastChatId);
   }, [chatOpen, lastChatId]);
+
+  useEffect(() => {
+    if (!isLocalDebugEnvironment()) return;
+    return installDebugShortcut(window, () => useGame.getState().maxEverything());
+  }, []);
 
   const badge: Partial<Record<Tab, boolean>> = {
     gacha: cans >= 5 || tickets > 0,

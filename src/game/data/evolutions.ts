@@ -136,7 +136,7 @@ export const EVOLUTION_FORMS: Record<string, EvolutionForm> = {
     skill: { name: '星と地面の生配信', line: '……待っててくれて、ありがとう', desc: '味方全体HPを全快し、バリア50%' },
     stats: { atk: 1.5, hp: 1.5, spd: 1.06, prod: 1.8, skill: 1.2 },
     effect: 'starfall', accent: '#8ed7ff', motif: 'LIVE / STARS × EARTH',
-    cutsceneLine: '一人でも千人でも✝本質✝は✝本質✝。数は関係ない。でも、千人は嬉しい。',
+    cutsceneLine: '✝本質✝は数じゃなかった。三十人に届けばいい。',
     cutsceneNarration: '太いペンが紙を走る。書き上げた言葉の向こうで、星明かりと地面の記憶がつながる。',
     cost: standardCost('evo_terachi'),
   },

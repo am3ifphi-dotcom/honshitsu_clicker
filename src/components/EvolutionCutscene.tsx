@@ -1,144 +1,128 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { EVOLUTION_FORMS } from '../game/data/evolutions';
 import { UNIT_MAP, getUnitForm } from '../game/data/units';
+import EvolutionStageFX from './EvolutionStageFX';
 import { sfx } from '../utils/sfx';
 
-const FX_GLYPHS: Record<string, string[]> = {
-  inferno: ['✝', '🔥', '北極', '辛', '本質'],
-  afterglow: ['∑', 'x²', '面白い', '放課後', '∴'],
-  starfall: ['✦', '★', '星', '地面', 'LIVE'],
-  contour: ['〰', '⌁', '等高線', '地層', '記憶'],
-  'court-pass': ['●', 'PASS', '信頼', '理屈じゃない', '✦'],
-  'phase-break': ['☨', '※', '存在', '前-原', '□'],
-  'strata-memory': ['🌋', '地層', '記録', '地面', '✦'],
+const SIGNATURES: Record<string, { words: string[]; seal: string; fragments: string[] }> = {
+  inferno: { words: ['これまじ', '✝本質✝。'], seal: '✝', fragments: ['✦', '火', '✝'] },
+  afterglow: { words: ['全部、', '繋がってるから。'], seal: '∑', fragments: ['∑', '∫', 'x²', '∴'] },
+  starfall: { words: ['三十人に', '届けばいい。'], seal: '✦', fragments: ['✦', '✧', '▱'] },
+  contour: { words: ['地面は、', '忘れない。'], seal: '◎', fragments: ['⌁', '＋', '等高線'] },
+  'court-pass': { words: ['お前が打つべきだ。', '理屈じゃない。'], seal: '◉', fragments: ['／', '✦', '—'] },
+  'phase-break': { words: ['存在しない。', 'だが、ある。'], seal: '☨', fragments: ['NULL', '☨', '存在'] },
+  'strata-memory': { words: ['君たちの時間を、', '地面は忘れない。'], seal: '🌏', fragments: ['⌁', '◇', '記憶'] },
 };
 
-function Art({ portrait, emoji, name, className = '' }: { portrait?: string; emoji: string; name: string; className?: string }) {
-  const mediaClass = `evo-cut__art-media ${className}`.trim();
-  return portrait ? (
-    <img src={portrait} alt={name} className={mediaClass} draggable={false} />
-  ) : (
-    <div className={`${mediaClass} evo-cut__glyph`} aria-label={name}>{emoji}</div>
-  );
-}
-
-export default function EvolutionCutscene({ unitId, onComplete }: { unitId: string; onComplete: () => void }) {
+export default function EvolutionCutscene({ unitId, replay = false, onComplete }: {
+  unitId: string; replay?: boolean; onComplete: () => void;
+}) {
   const form = EVOLUTION_FORMS[unitId];
   const base = UNIT_MAP[unitId];
   const after = getUnitForm(unitId, true);
   const [beat, setBeat] = useState(0);
-  const [finishing, setFinishing] = useState(false);
-  const doneRef = useRef(false);
-  const completeRef = useRef(onComplete);
-  completeRef.current = onComplete;
-
+  const [run, setRun] = useState(0);
+  const done = useRef(false);
+  const advanceLock = useRef(0);
+  const dialog = useRef<HTMLDivElement>(null);
+  const complete = useRef(onComplete);
+  complete.current = onComplete;
   const finish = useCallback(() => {
-    if (doneRef.current) return;
-    doneRef.current = true;
-    setFinishing(true);
-    window.setTimeout(() => completeRef.current(), 420);
+    if (done.current) return;
+    done.current = true;
+    complete.current();
   }, []);
 
-  const particles = useMemo(() => {
-    const glyphs = FX_GLYPHS[form?.effect ?? 'phase-break'] ?? ['✦', '✝', '本質'];
-    return Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      left: `${(i * 37 + 11) % 100}%`,
-      delay: `${((i * 13) % 47) / 10}s`,
-      duration: `${6 + ((i * 17) % 50) / 10}s`,
-      size: 10 + ((i * 23) % 25),
-      glyph: glyphs[i % glyphs.length],
-    }));
-  }, [form?.effect]);
-
   useEffect(() => {
-    doneRef.current = false;
+    const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    dialog.current?.focus();
+    return () => { document.body.style.overflow = overflow; previous?.focus(); };
+  }, []);
+
+  // Reading phases NEVER have timers. Only the cinematic between taps advances itself.
+  useEffect(() => {
+    if (beat < 2 || beat >= 5) return;
+    const duration = beat === 2 ? 1900 : beat === 3 ? 1350 : 3300;
+    if (beat === 2) sfx.awaken();
+    if (beat === 4) sfx.reveal(5);
+    const timer = window.setTimeout(() => setBeat(beat + 1), duration);
+    return () => window.clearTimeout(timer);
+  }, [beat]);
+
+  const advance = () => {
+    const now = performance.now();
+    if (now < advanceLock.current || beat > 1) return;
+    advanceLock.current = now + 450;
+    setBeat(beat + 1);
+  };
+  const restart = () => {
+    done.current = false;
+    advanceLock.current = performance.now() + 450;
     setBeat(0);
-    setFinishing(false);
-    sfx.ultra();
-    const timers = [
-      window.setTimeout(() => setBeat(1), 1300),
-      window.setTimeout(() => setBeat(2), 3600),
-      window.setTimeout(() => {
-        setBeat(3);
-        sfx.reveal(5);
-      }, 6350),
-      window.setTimeout(() => setBeat(4), 8500),
-      window.setTimeout(() => finish(), 14500),
-    ];
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [unitId, finish]);
+    setRun(n => n + 1);
+  };
 
   if (!form || !base || !after) return null;
+  const theme = SIGNATURES[form.effect];
+  const art = (portrait: string | undefined, emoji: string, name: string) => portrait
+    ? <img src={portrait} alt={name} draggable={false} />
+    : <span className="evolution-glyph" role="img" aria-label={name}>{emoji}</span>;
 
-  const style = { '--evo-accent': form.accent } as CSSProperties;
-  const revealed = beat >= 3;
-
-  return (
-    <div className={`evo-cut evo-cut--${form.effect} ${revealed ? 'is-revealed' : ''} ${finishing ? 'is-finishing' : ''}`} style={style} role="dialog" aria-modal="true" aria-label={`${form.name}への進化演出`}>
-      <div className="evo-cut__backdrop" />
-      <div className="evo-cut__grid" />
-      <div className="evo-cut__contours" />
-      <div className="evo-cut__rays" />
-      <div className="evo-cut__particles" aria-hidden="true">
-        {particles.map((p) => (
-          <span key={p.id} className="evo-cut__particle" style={{ left: p.left, animationDelay: p.delay, animationDuration: p.duration, fontSize: p.size }}>
-            {p.glyph}
-          </span>
-        ))}
+  return createPortal(
+    <div ref={dialog} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`${form.name}の進化${replay ? '・再鑑賞' : ''}`}
+      className={`evolution evolution--${form.effect} evolution--beat-${beat}`}
+      style={{ '--accent': form.accent } as CSSProperties}
+      onKeyDown={(event) => {
+        if ((event.key === 'Enter' || event.key === ' ') && event.target === dialog.current && !event.repeat) {
+          event.preventDefault(); advance();
+        }
+        if (event.key === 'Escape' && replay) { event.stopPropagation(); finish(); }
+        if (event.key === 'Tab') {
+          const buttons = dialog.current?.querySelectorAll<HTMLButtonElement>('button');
+          if (!buttons?.length) return;
+          const first = buttons[0], last = buttons[buttons.length - 1];
+          if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog.current)) { event.preventDefault(); last.focus(); }
+          else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialog.current)) { event.preventDefault(); first.focus(); }
+        }
+      }}>
+      <div key={run} className="evolution-film">
+        <div className="evolution-art evolution-art--before">{art(base.portrait, base.emoji, base.name)}</div>
+        <div className="evolution-art evolution-art--after">{art(after.portrait, after.emoji, after.name)}</div>
+        <div className="evolution-shade" />
+        <EvolutionStageFX effect={form.effect} accent={form.accent} beat={beat} />
+        <div className="evolution-lens" aria-hidden="true" />
+        {beat >= 2 && beat <= 4 && <div className="evolution-closeup" aria-hidden="true">{art(after.portrait, after.emoji, '')}<span>{theme.words[0]}</span></div>}
+        <div className="evolution-shockwaves" aria-hidden="true">{[0,1,2].map(i => <i key={i} style={{ '--ring': i } as CSSProperties} />)}</div>
+        <div className="evolution-fragments" aria-hidden="true">
+          {Array.from({ length: 24 }, (_, i) => <i key={i} style={{ '--i': i, left: `${i * 37 % 100}%`, top: `${i * 23 % 100}%` } as CSSProperties}>{theme.fragments[i % theme.fragments.length]}</i>)}
+        </div>
+        <div className="evolution-seal" aria-hidden="true">{theme.seal}</div>
+        <div className="evolution-wipe" aria-hidden="true" />
+        <div className="evolution-impact" aria-hidden="true" />
+        <div className="evolution-letterbox evolution-letterbox--top" />
+        <div className="evolution-letterbox evolution-letterbox--bottom" />
+        <header className="evolution-header"><span>{form.motif}</span><span>LR <b>→</b> EX</span></header>
+        <div className="evolution-prologue"><span>{base.name}</span><p>{form.cutsceneNarration}</p></div>
+        <div className="evolution-dialogue"><small>{base.name}</small><p>「{form.cutsceneLine}」</p></div>
+        <div className="evolution-signature" aria-hidden="true">{theme.words.map((word, i) => <span key={word} style={{ '--line': i } as CSSProperties}>{word}</span>)}</div>
+        {beat >= 5 && <div className="evolution-result">
+          <div className="evolution-rank">EX<span>本質、その先へ。</span></div>
+          <p>{form.title}</p><h2>{form.name}</h2>
+          <div className="evolution-actions">
+            <button onClick={restart}>もう一度観る</button>
+            <button className="evolution-primary" onClick={finish}>{replay ? '鑑賞を終える' : 'この姿で、先へ'} <span>→</span></button>
+          </div>
+        </div>}
+        <footer className="evolution-progress" aria-label="進化演出の進行">{[0, 1, 2, 3, 4, 5].map(n => <i key={n} className={beat >= n ? 'active' : ''} />)}</footer>
       </div>
-      <div className={`evo-cut__flash ${revealed ? 'is-on' : ''}`} />
-
-      <div className="evo-cut__frame">
-        <div className="evo-cut__eyebrow">
-          <span>CHARACTER EVOLUTION</span>
-          <span className="evo-cut__status"><i /> EX / AWAKENING SEQUENCE</span>
-        </div>
-
-        <div className={`evo-cut__motif ${beat >= 1 ? 'is-active' : ''}`} aria-hidden="true">
-          <span>{form.motif}</span>
-          <span className="evo-cut__motif-line" />
-          <span>LR → EX</span>
-        </div>
-
-        <div className={`evo-cut__stage ${revealed ? 'is-revealed' : ''}`}>
-          <div className="evo-cut__orbit evo-cut__orbit--one" />
-          <div className="evo-cut__orbit evo-cut__orbit--two" />
-          <div className="evo-cut__seal">✦</div>
-          <div className="evo-cut__art evo-cut__art--before">
-            <Art portrait={base.portrait} emoji={base.emoji} name={base.name} />
-          </div>
-          <div className="evo-cut__art evo-cut__art--after">
-            <Art portrait={after.portrait} emoji={after.emoji} name={after.name} />
-          </div>
-          <div className="evo-cut__stage-label evo-cut__stage-label--before">{base.name}<small>BEFORE / LR</small></div>
-          <div className="evo-cut__stage-label evo-cut__stage-label--after">{form.name}<small>AFTER / EX</small></div>
-        </div>
-
-        <div className="evo-cut__copy">
-          <div className={`evo-cut__narration ${beat >= 1 ? 'is-visible' : ''}`}>{form.cutsceneNarration}</div>
-          <div className={`evo-cut__quote ${beat >= 2 ? 'is-visible' : ''}`}>
-            <span className="evo-cut__quote-mark">“</span>
-            <p>{form.cutsceneLine}</p>
-            <span className="evo-cut__quote-rule" />
-          </div>
-          <div className={`evo-cut__name ${beat >= 4 ? 'is-visible' : ''}`}>
-            <span>EX / {form.title}</span>
-            <strong>{form.name}</strong>
-          </div>
-        </div>
-
-        <div className="evo-cut__footer">
-          <div className="evo-cut__timeline" aria-label="進化演出の進行">
-            {[0, 1, 2, 3, 4].map((n) => <i key={n} className={beat >= n ? 'is-lit' : ''} />)}
-          </div>
-          <div className="evo-cut__footer-row">
-            <span>{beat < 4 ? '共鳴中……' : '新たな姿が定着した'}</span>
-            {beat >= 4 && <button type="button" onClick={finish} className="evo-cut__finish">EX進化を確定する <b>↗</b></button>}
-          </div>
-        </div>
-      </div>
-    </div>
+      {beat <= 1 && <button className="evolution-advance" onClick={advance} aria-label={beat === 0 ? '続きを見る' : '進化を解き放つ'}>
+        <span className="evolution-tap"><i />{beat === 0 ? 'タップして、続きを見る' : 'タップして、解き放つ'}<b>→</b></span>
+      </button>}
+      {beat >= 2 && beat < 5 && <button className="evolution-skip" onClick={() => setBeat(5)}>スキップ ≫</button>}
+    </div>, document.body,
   );
 }
