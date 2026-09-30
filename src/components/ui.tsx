@@ -55,42 +55,51 @@ export function UnitIcon({ def, size = 56, dim = false, className = '' }: { def:
 
 type ExEffect = NonNullable<UnitDef['evolutionEffect']>;
 
-/** One flame tongue along the bottom edge of the icon frame. */
+/** Asymmetric, tapered flame ribbons; varied shoulders keep the fire from reading as a row of identical spikes. */
 const flameTongue = (cx: number, h: number, hw: number, lean: number) =>
-  `M${cx - hw} 108 C ${cx - hw - 2} ${108 - h * 0.42} ${cx - hw * 0.45} ${108 - h * 0.68} ${cx + lean} ${108 - h} C ${cx + lean + hw * 0.42} ${108 - h * 0.7} ${cx + hw + 3} ${108 - h * 0.32} ${cx + hw} 108 Z`;
+  `M${cx - hw} 108 C ${cx - hw * 1.18} ${108 - h * .26} ${cx - hw * .34} ${108 - h * .43} ${cx + lean - hw * .12} ${108 - h * .72} C ${cx + lean + hw * .08} ${108 - h * .89} ${cx + lean + hw * .18} ${108 - h * .96} ${cx + lean + hw * .38} ${108 - h} C ${cx + lean + hw * .45} ${108 - h * .73} ${cx + hw * .54} ${108 - h * .64} ${cx + hw * .72} ${108 - h * .46} C ${cx + hw * 1.08} ${108 - h * .27} ${cx + hw * 1.04} ${108 - h * .12} ${cx + hw} 108 Z`;
 
 function InfernoScene({ uid }: { uid: string }) {
-  const back: [number, number, number, number][] = [[6, 34, 9, 3], [20, 46, 10, -3], [34, 38, 9, 2], [50, 54, 11, 0], [66, 38, 9, -2], [80, 46, 10, 3], [94, 33, 9, -3]];
-  const front: [number, number, number, number][] = [[13, 24, 6.5, -2], [31, 28, 7, 2], [50, 30, 7.5, 0], [69, 27, 7, -2], [87, 23, 6.5, 2]];
+  const back: [number, number, number, number][] = [[3, 63, 13, 7], [17, 49, 13, -4], [32, 68, 14, 5], [49, 52, 14, -4], [66, 70, 14, -5], [83, 51, 13, 4], [98, 64, 13, -6]];
+  const front: [number, number, number, number][] = [[10, 35, 10, -4], [29, 43, 11, 4], [50, 37, 12, -3], [72, 46, 11, 5], [91, 34, 10, -4]];
   return (
     <>
       <defs>
         <linearGradient id={`${uid}fO`} x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0" stopColor="#ff2705" />
-          <stop offset=".48" stopColor="#ff7c1e" />
-          <stop offset=".84" stopColor="#ffcd5e" />
-          <stop offset="1" stopColor="#fff7c8" />
+          <stop offset="0" stopColor="#6e100c" />
+          <stop offset=".28" stopColor="#e33113" />
+          <stop offset=".62" stopColor="#ff7623" />
+          <stop offset=".86" stopColor="#ffc34d" />
+          <stop offset="1" stopColor="#fff4c2" />
         </linearGradient>
         <linearGradient id={`${uid}fI`} x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0" stopColor="#ff9500" />
-          <stop offset=".55" stopColor="#ffd978" />
-          <stop offset="1" stopColor="#fffef2" />
+          <stop offset="0" stopColor="#ed4a13" />
+          <stop offset=".52" stopColor="#ff9b28" />
+          <stop offset=".84" stopColor="#ffe078" />
+          <stop offset="1" stopColor="#fffef1" />
         </linearGradient>
         <radialGradient id={`${uid}coal`} cx=".5" cy="1" r=".95">
-          <stop offset="0" stopColor="#fff3c0" />
-          <stop offset=".45" stopColor="#ffab3d" stopOpacity=".85" />
+          <stop offset="0" stopColor="#fff2b4" stopOpacity=".95" />
+          <stop offset=".3" stopColor="#ff9c32" stopOpacity=".82" />
+          <stop offset=".72" stopColor="#ee3413" stopOpacity=".38" />
           <stop offset="1" stopColor="#ff5a00" stopOpacity="0" />
         </radialGradient>
+        <radialGradient id={`${uid}heat`} cx=".5" cy="1" r=".9">
+          <stop offset="0" stopColor="#fff0b0" stopOpacity=".9" />
+          <stop offset=".32" stopColor="#ff7b22" stopOpacity=".58" />
+          <stop offset="1" stopColor="#ff3510" stopOpacity="0" />
+        </radialGradient>
+        <filter id={`${uid}glow`} x="-35%" y="-35%" width="170%" height="180%">
+          <feGaussianBlur stdDeviation="2.2" />
+        </filter>
       </defs>
-      <ellipse className="ex-coals" cx="50" cy="106" rx="54" ry="20" fill={`url(#${uid}coal)`} />
+      <ellipse className="ex-heat-haze" cx="50" cy="94" rx="70" ry="60" fill={`url(#${uid}heat)`} filter={`url(#${uid}glow)`} />
+      <ellipse className="ex-coals" cx="50" cy="106" rx="62" ry="24" fill={`url(#${uid}coal)`} />
       <g className="ex-flames ex-flames--back">
         {back.map(([x, h, hw, lean], i) => (
           <path key={i} className="ex-flame ex-flame--back" style={{ '--n': i } as CSSProperties} d={flameTongue(x, h, hw, lean)} fill={`url(#${uid}fO)`} />
         ))}
       </g>
-      {[24, 50, 76].map((x, i) => (
-        <path key={i} className="ex-lick" style={{ '--n': i } as CSSProperties} pathLength={78} d={`M${x} 106 C ${x - 11} 84 ${x + 9} 70 ${x - 2} 46`} />
-      ))}
       <g className="ex-flames ex-flames--front">
         {front.map(([x, h, hw, lean], i) => (
           <path key={i} className="ex-flame ex-flame--front" style={{ '--n': i } as CSSProperties} d={flameTongue(x, h, hw, lean)} fill={`url(#${uid}fI)`} />
@@ -253,7 +262,7 @@ export function EvolutionAura({ effect, active = true }: { effect: ExEffect; act
       </svg>
       <span className="unit-evo-fx__corona" />
       <span className="unit-evo-fx__glint" />
-      {Array.from({ length: 6 }, (_, i) => <i key={i} className="unit-evo-fx__mote" style={{ '--n': i } as CSSProperties} />)}
+      {Array.from({ length: effect === 'inferno' ? 9 : 6 }, (_, i) => <i key={i} className="unit-evo-fx__mote" style={{ '--n': i } as CSSProperties} />)}
     </div>
   );
 }
