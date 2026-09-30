@@ -330,12 +330,13 @@ export const useGame = create<GameStore>()((set, get) => ({
   maxEverything: () => {
     const s = get();
     // Keep the original pre-cheat save even when the command is repeated.
+    // Storage may be unavailable in private/embedded contexts; still apply the unlocks in memory.
+    let backupAvailable = true;
     try {
       const key = SAVE_KEY + '-before-max-everything';
       if (!localStorage.getItem(key)) localStorage.setItem(key, serialize(s));
     } catch {
-      s.toast('バックアップを保存できなかったため、全強化を中止しました', 'bad');
-      return;
+      backupAvailable = false;
     }
     const maxRanks = (defs: Record<string, { max: number }>) =>
       Object.fromEntries(Object.entries(defs).map(([id, def]) => [id, def.max]));
@@ -364,7 +365,12 @@ export const useGame = create<GameStore>()((set, get) => ({
       bonusSP: Math.max(s.bonusSP, spSpent(enhanced)),
     });
     get().save();
-    get().toast('✝ 全強化完了：全部員完凸・Lv最大・覚醒・絆MAX・EX進化／全スキル・永続強化MAX', 'rare');
+    get().toast(
+      backupAvailable
+        ? '✝ 全強化完了：全部員完凸・Lv最大・覚醒・絆MAX・EX進化／全スキル・永続強化MAX'
+        : '✝ 全強化完了（この環境では保存不可。再読み込みで元に戻る場合があります）',
+      backupAvailable ? 'rare' : 'bad',
+    );
   },
 
   init: () => {

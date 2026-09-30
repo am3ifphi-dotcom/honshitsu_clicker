@@ -43,5 +43,11 @@ try {
   type('honshitsu', { ctrlKey: true }); assert.equal(activated, 2);
   type('honxshitsu'); assert.equal(activated, 2);
   remove(); type('honshitsu'); assert.equal(activated, 2);
-  console.log(`PASS: ${UNITS.length} units, ${Object.keys(EVOLUTION_FORMS).length} evolutions, upgrades, finite stats, save/backup, repeat execution, keyboard guards/cleanup`);
+  const originalGetItem = localStorage.getItem, originalSetItem = localStorage.setItem;
+  localStorage.getItem = localStorage.setItem = () => { throw new Error('storage unavailable'); };
+  useGame.getState().maxEverything();
+  assert.match(useGame.getState().toasts.at(-1).text, /この環境では保存不可/);
+  localStorage.getItem = originalGetItem;
+  localStorage.setItem = originalSetItem;
+  console.log(`PASS: ${UNITS.length} units, ${Object.keys(EVOLUTION_FORMS).length} evolutions, upgrades, finite stats, save/backup, repeat execution, keyboard guards/cleanup, storage-unavailable fallback`);
 } finally { await server.close(); }

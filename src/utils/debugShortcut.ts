@@ -1,9 +1,3 @@
-/** Production websites do not enable the typing shortcut; local files/dev previews do. */
-export function isLocalDebugEnvironment() {
-  return import.meta.env.DEV || location.protocol === 'file:' ||
-    ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-}
-
 export function installDebugShortcut(target: Window, activate: () => void) {
   const sequence = 'honshitsu';
   let buffer = '';
