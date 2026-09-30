@@ -380,211 +380,54 @@ button:disabled {
   transform-origin: center;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
 }
-.unit-evo-fx {
+/* ── EXアイコンFX：世界観の動きはcanvas、額縁と色調はCSSで組む ───────────
+   アイコンサイズ（36〜280px）でも破綻しないよう、細かい装飾線は持たず
+   「額縁＋属性色のグレード＋画面全体を使う大きな造形」で読み合わせる。 */
+.ex-fx {
   position: absolute;
   z-index: 2;
   inset: 0;
   overflow: hidden;
   border-radius: inherit;
   pointer-events: none;
-  isolation: isolate;
-  --fx: #ffb965;
-  --fx2: #fff3d8;
 }
-.unit-evo-fx--inferno { --fx: #ff732b; --fx2: #ffd76a; }
-.unit-evo-fx--afterglow { --fx: #ffbf75; --fx2: #fff3d8; }
-.unit-evo-fx--starfall { --fx: #bbcaff; --fx2: #ffffff; }
-.unit-evo-fx--contour { --fx: #ffdc8b; --fx2: #fff0c8; }
-.unit-evo-fx--court-pass { --fx: #c5efff; --fx2: #ffffff; }
-.unit-evo-fx--phase-break { --fx: #ff4269; --fx2: #69ebff; }
-.unit-evo-fx--strata-memory { --fx: #eeb979; --fx2: #ffd66e; }
-.unit-evo-fx__wash,
-.unit-evo-fx__depth {
-  position: absolute;
-  inset: -30%;
-  display: block;
-}
-.unit-evo-fx--inferno .unit-evo-fx__wash {
-  background: radial-gradient(ellipse at 50% 118%, rgba(255,60,8,.75), transparent 60%), linear-gradient(0deg, rgba(120,10,0,.45), transparent 55%);
-  animation: exWashHeat 3.4s ease-in-out infinite alternate;
-}
-.unit-evo-fx--inferno .unit-evo-fx__depth {
-  background: repeating-linear-gradient(75deg, transparent 0 10px, rgba(255,190,80,.14) 11px 13px, transparent 14px 24px);
-  mask-image: linear-gradient(0deg, #000 35%, transparent 92%);
-  -webkit-mask-image: linear-gradient(0deg, #000 35%, transparent 92%);
-  animation: exEmberColumns 2.6s linear infinite;
-}
-.unit-evo-fx--afterglow .unit-evo-fx__wash {
-  background: radial-gradient(ellipse at 12% 112%, rgba(255,186,110,.6), transparent 62%), radial-gradient(ellipse at 88% -10%, rgba(255,220,170,.28), transparent 55%), linear-gradient(115deg, transparent 40%, rgba(255,205,140,.14) 50%, transparent 60%);
-  animation: exWashBreath 4.8s ease-in-out infinite;
-}
-.unit-evo-fx--afterglow .unit-evo-fx__depth {
-  background: repeating-linear-gradient(115deg, transparent 0 16px, rgba(255,240,205,.09) 17px 20px, transparent 21px 36px);
-  animation: exDuskDrift 14s linear infinite;
-}
-.unit-evo-fx--starfall .unit-evo-fx__wash {
-  background: radial-gradient(circle at 24% 26%, #fff9 0 1px, transparent 2.2px), radial-gradient(circle at 72% 62%, #d7f6ff 0 1px, transparent 2.2px), radial-gradient(circle at 48% 84%, #fff 0 1px, transparent 2.2px), radial-gradient(ellipse at 50% 116%, rgba(96,170,255,.5), transparent 60%);
-  background-size: 29px 31px, 37px 39px, 23px 27px, 100% 100%;
-  animation: exStarDrift 7s linear infinite;
-}
-.unit-evo-fx--starfall .unit-evo-fx__depth {
-  background: linear-gradient(148deg, transparent 30%, rgba(150,200,255,.14) 44%, rgba(200,170,255,.12) 52%, transparent 66%);
-  animation: exAuroraSway 9s ease-in-out infinite alternate;
-}
-.unit-evo-fx--contour .unit-evo-fx__wash {
-  background: repeating-radial-gradient(ellipse at 38% 56%, transparent 0 9px, rgba(255,220,145,.3) 10px 11px, transparent 12px 18px);
-  animation: exTopoBreath 9s ease-in-out infinite;
-}
-.unit-evo-fx--contour .unit-evo-fx__depth {
-  background: repeating-radial-gradient(ellipse at 74% 30%, transparent 0 13px, rgba(255,255,255,.12) 14px 15px, transparent 16px 24px);
-  animation: exTopoBreath 13s ease-in-out infinite reverse;
-}
-.unit-evo-fx--court-pass .unit-evo-fx__wash {
-  background: repeating-linear-gradient(104deg, transparent 0 18px, rgba(166,225,255,.3) 19px 20px, transparent 21px 38px);
-  animation: exWashRush 2.1s ease-in-out infinite;
-}
-.unit-evo-fx--court-pass .unit-evo-fx__depth {
-  background: radial-gradient(circle at 50% 50%, transparent 28%, rgba(96,190,255,.35) 30% 31%, transparent 33%);
-  animation: exRingPulse 3.2s ease-in-out infinite;
-}
-.unit-evo-fx--phase-break .unit-evo-fx__wash {
-  background: repeating-linear-gradient(0deg, transparent 0 8px, rgba(255,36,83,.4) 9px 10px, transparent 11px 16px);
-  mix-blend-mode: screen;
-  animation: exWashGlitch 1.15s steps(3) infinite;
-}
-.unit-evo-fx--phase-break .unit-evo-fx__depth {
-  background: linear-gradient(90deg, transparent 22%, rgba(255,255,255,.35) 49%, transparent 51%, rgba(105,235,255,.3) 74%, transparent 79%);
-  animation: exWashScan 2.6s steps(4) infinite;
-}
-.unit-evo-fx--strata-memory .unit-evo-fx__wash {
-  background: repeating-linear-gradient(0deg, transparent 0 7px, rgba(224,174,112,.4) 8px 9px, rgba(102,57,32,.18) 10px 13px);
-  mask-image: linear-gradient(0deg, #000 40%, transparent 95%);
-  -webkit-mask-image: linear-gradient(0deg, #000 40%, transparent 95%);
-  animation: exSedShift 6s ease-in-out infinite;
-}
-.unit-evo-fx--strata-memory .unit-evo-fx__depth {
-  background: radial-gradient(ellipse at 50% 118%, rgba(255,196,110,.6), transparent 58%);
-  animation: exWashBreath 4.4s ease-in-out infinite;
-}
-
-.unit-evo-fx__scene {
+.ex-fx__canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  overflow: visible;
-  filter: drop-shadow(0 0 2px var(--fx));
+  display: block;
 }
-.unit-evo-fx__scene text {
-  font-family: Georgia, "Times New Roman", serif;
-  font-style: italic;
-  user-select: none;
-}
-.unit-evo-fx__corona {
+/* 立ち絵をキャラクターの属性色へ寄せる（薄く、黒は潰さない） */
+.ex-fx__grade {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 0 10px color-mix(in srgb, var(--fx) 55%, transparent), inset 0 -6px 14px color-mix(in srgb, var(--fx) 45%, transparent);
-  animation: exCorona 3.4s ease-in-out infinite;
-}
-.unit-evo-fx__glint {
-  position: absolute;
-  inset: -60% -25%;
   display: block;
-  background: linear-gradient(112deg, transparent 43%, rgba(255,255,255,.5) 49%, rgba(255,255,255,.1) 52%, transparent 58%);
-  transform: translateX(-130%) rotate(8deg);
-  animation: exGlintSweep 4.6s cubic-bezier(.65,.05,.35,1) infinite;
+  background:
+    linear-gradient(155deg, color-mix(in srgb, var(--ex-color, #b7d7ff) 30%, transparent) 0%, transparent 48%),
+    radial-gradient(125% 78% at 50% 120%, color-mix(in srgb, var(--ex-color, #b7d7ff) 26%, transparent), transparent 64%);
 }
-.unit-evo-fx__mote {
+/* 内側の陰影＋四隅のブラケット。7人で共通の「額縁言語」にして違和感を消す */
+.ex-fx__frame {
   position: absolute;
-  bottom: -6px;
-  left: calc(11% + var(--n) * 15.5%);
-  width: 4%;
-  height: 4%;
-  min-width: 2px;
-  min-height: 2px;
-  border-radius: 50%;
-  background: var(--fx);
-  box-shadow: 0 0 6px var(--fx), 0 0 2px #fff;
-  opacity: 0;
-  animation: exMoteRise 4.4s linear infinite;
-  animation-delay: calc(var(--n) * -.73s);
+  inset: 0;
+  display: block;
+  background:
+    radial-gradient(118% 92% at 50% 50%, transparent 56%, rgba(0, 0, 0, .4) 100%),
+    linear-gradient(0deg, rgba(0, 0, 0, .3), transparent 24%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ex-color, #b7d7ff) 26%, transparent);
 }
-.unit-evo-fx--inferno .unit-evo-fx__mote {
-  width: 5%; height: 11%;
-  border-radius: 70% 70% 70% 70% / 90% 90% 40% 40%;
-  background: radial-gradient(closest-side, #fff2b0, var(--fx) 70%, transparent);
-  animation: exEmberRise 2.4s ease-in infinite;
-  animation-delay: calc(var(--n) * -.41s);
+.ex-fx__frame::before,
+.ex-fx__frame::after {
+  content: "";
+  position: absolute;
+  width: 20%;
+  height: 20%;
+  border: var(--ex-ring, 2px) solid color-mix(in srgb, var(--ex-color, #b7d7ff) 88%, #fff);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--ex-color, #b7d7ff) 75%, transparent));
 }
-.unit-evo-fx--afterglow .unit-evo-fx__mote {
-  width: 2.5%; height: 2.5%;
-  border-radius: 0;
-  background: #fff3d8;
-  box-shadow: 0 0 4px #ffdf9e;
-  animation: exChalkDust 7.5s ease-in-out infinite;
-  animation-delay: calc(var(--n) * -1.25s);
-}
-.unit-evo-fx--starfall .unit-evo-fx__mote {
-  top: -8px; bottom: auto;
-  width: 7%; height: 7%;
-  border-radius: 0;
-  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
-  background: #eaf4ff;
-  animation: exStarMote 5.5s linear infinite;
-  animation-delay: calc(var(--n) * -.92s);
-}
-.unit-evo-fx--contour .unit-evo-fx__mote {
-  width: 5%; height: 4.5%;
-  border-radius: 0;
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  animation-duration: 6.2s;
-}
-.unit-evo-fx--court-pass .unit-evo-fx__mote {
-  width: 16%; height: 1.5%;
-  border-radius: 2px;
-  animation: exDashFly 1.5s linear infinite;
-  animation-delay: calc(var(--n) * -.25s);
-}
-.unit-evo-fx--phase-break .unit-evo-fx__mote {
-  top: calc(10% + var(--n) * 14%);
-  bottom: auto;
-  left: calc(6% + var(--n) * 16%);
-  width: 12%; height: 2.5%;
-  border-radius: 0;
-  animation: exGlitchChip 1.9s steps(3) infinite;
-  animation-delay: calc(var(--n) * -.32s);
-}
-.unit-evo-fx--strata-memory .unit-evo-fx__mote {
-  background: #ffd9a0;
-  box-shadow: 0 0 8px var(--fx);
-  animation-duration: 6.6s;
-  animation-delay: calc(var(--n) * -1.1s);
-}
-.unit-evo-fx:not(.is-active),
-.unit-evo-fx:not(.is-active) * { animation-play-state: paused !important; }
-
-@keyframes exWashBreath { 0%, 100% { opacity: .28; transform: scale(.96); } 50% { opacity: .7; transform: scale(1.06); } }
-@keyframes exWashHeat { from { opacity: .55; transform: translateY(2%) scale(1); } to { opacity: .85; transform: translateY(-2%) scale(1.05); } }
-@keyframes exEmberColumns { from { transform: translateY(0); } to { transform: translateY(-24px); } }
-@keyframes exDuskDrift { from { background-position: 0 0; } to { background-position: 72px 0; } }
-@keyframes exStarDrift { from { background-position: 0 0, 8px 0, 16px 0, 0 0; } to { background-position: -29px 31px, 45px 39px, -7px 27px, 0 0; } }
-@keyframes exAuroraSway { from { transform: translateX(-6%) scaleY(1); opacity: .5; } to { transform: translateX(6%) scaleY(1.15); opacity: .85; } }
-@keyframes exTopoBreath { 0%, 100% { transform: scale(.96) rotate(-3deg); } 50% { transform: scale(1.1) rotate(3deg); } }
-@keyframes exWashRush { 0%, 100% { transform: translateX(-20%) skewX(-6deg); opacity: .25; } 50% { transform: translateX(20%) skewX(-6deg); opacity: .55; } }
-@keyframes exRingPulse { 0%, 100% { opacity: .35; transform: scale(.92); } 50% { opacity: .8; transform: scale(1.08); } }
-@keyframes exWashGlitch { 0%, 100% { transform: translate(0); clip-path: inset(0); } 25% { transform: translate(4%, -2%); clip-path: inset(10% 0 62% 0); } 50% { transform: translate(-3%, 1%); clip-path: inset(58% 0 18% 0); } 75% { transform: translate(2%, 0); clip-path: inset(0); } }
-@keyframes exWashScan { 0%, 100% { opacity: .15; transform: translateX(-18%); } 50% { opacity: .6; transform: translateX(18%); } }
-@keyframes exSedShift { 0%, 100% { transform: translateY(3%) scaleY(.9); opacity: .55; } 50% { transform: translateY(-3%) scaleY(1.08); opacity: .8; } }
-@keyframes exCorona { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
-@keyframes exGlintSweep { 0%, 16% { transform: translateX(-130%) rotate(8deg); } 58%, 100% { transform: translateX(135%) rotate(8deg); } }
-@keyframes exMoteRise { 0% { transform: translate(0, 0) scale(.5); opacity: 0; } 12% { opacity: .95; } 65% { opacity: .7; } 100% { transform: translate(14px, -110px) scale(1.05); opacity: 0; } }
-@keyframes exEmberRise { 0% { transform: translate(0, 0) rotate(45deg) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-8px + var(--n) * 3px), -90px) rotate(60deg) scale(.9); opacity: 0; } }
-@keyframes exChalkDust { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 18% { opacity: .8; } 50% { transform: translate(-10px, -45px) rotate(140deg); } 100% { transform: translate(6px, -95px) rotate(240deg); opacity: 0; } }
-@keyframes exStarMote { 0% { transform: translate(0, 0) scale(.4) rotate(0); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(-18px, 105px) scale(1) rotate(180deg); opacity: 0; } }
-@keyframes exDashFly { 0% { transform: translate(-70px, 30px) rotate(-28deg) scaleX(.4); opacity: 0; } 25% { opacity: 1; } 100% { transform: translate(100px, -80px) rotate(-28deg) scaleX(1.6); opacity: 0; } }
-@keyframes exGlitchChip { 0%, 100% { transform: translateX(0); opacity: 0; } 20% { opacity: 1; } 45% { transform: translateX(9px); } 70% { opacity: .3; } 85% { transform: translateX(-4px); opacity: .8; } }
-@keyframes unitEvoGlitch { 0%, 100% { transform: translate(0); clip-path: inset(0 0 0 0); } 20% { transform: translate(3%, -2%); clip-path: inset(14% 0 69% 0); } 40% { transform: translate(-2%, 1%); clip-path: inset(68% 0 12% 0); } 60% { transform: translate(1%, 0); clip-path: inset(0 0 0 0); } }
+.ex-fx__frame::before { left: 5%; top: 5%; border-right: 0; border-bottom: 0; border-top-left-radius: 3px; }
+.ex-fx__frame::after { right: 5%; bottom: 5%; border-left: 0; border-top: 0; border-bottom-right-radius: 3px; }
 
 /* Full-viewport character cinema. Artwork, not a card, is the stage. */
 .evolution { position:fixed; inset:0; z-index:10000; background:#050509; color:#fff; overflow:hidden; isolation:isolate; outline:none; }
@@ -596,7 +439,6 @@ button:disabled {
 .evolution-glyph { display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: min(85vw,85dvh); color:var(--accent); text-shadow:0 0 90px var(--accent); }
 .evolution-shade { position:absolute; inset:0; background:linear-gradient(0deg,#03040a 0%,#03040a99 16%,transparent 60%,#03040a66),linear-gradient(90deg,#03040a55,transparent 70%); }
 .evolution-field { position:absolute; inset:0; opacity:.65; mix-blend-mode:screen; pointer-events:none; }
-.evolution-field .unit-evo-fx__glint { animation-duration:8s; }
 .evolution-fragments { position:absolute; inset:0; pointer-events:none; }
 .evolution-fragments i { position:absolute; color:var(--accent); font-style:normal; font-size:clamp(12px,2vw,32px); text-shadow:0 0 14px var(--accent); animation:cinemaDust 5s linear infinite; animation-delay:calc(var(--i) * -.31s); }
 .evolution-letterbox { position:absolute; left:0; right:0; height:9%; background:#050509; transition:height 1.2s; }
@@ -666,8 +508,15 @@ button:disabled {
 @media(max-width:600px) { .evolution-art img { object-position:50% 35%; } .evolution-dialogue { bottom:20%; } .evolution-header { font-size:8px; letter-spacing:.12em; } .evolution-signature { padding:20% 5%; font-size:clamp(32px,8vw,48px); } .evolution-result { left:6%; right:6%; } .evolution-actions button { padding:12px; } .evolution-rank span { font-size:10px; } }
 @media(max-height:500px) { .evolution-result { bottom:30px; } .evolution-rank { font-size:36px; }.evolution-result h2 { font-size:24px; }.evolution-result>p { margin:8px 0; }.evolution-actions { margin-top:12px; }.evolution-signature { font-size:9vh; } }
 /* Icon-local signature scenes: 7人それぞれの世界観がアイコン内で自律運動する。 */
-.ex-living-icon { border-color: var(--ex-color, #b7d7ff); box-shadow: 0 0 13px color-mix(in srgb, var(--ex-color, #b7d7ff) 50%, transparent), inset 0 0 8px #fff8; }
-.ex-living-icon--inferno { --ex-color: #ff692a; }
+.ex-living-icon {
+  isolation: isolate;
+  border-color: var(--ex-color, #b7d7ff);
+  box-shadow:
+    0 0 16px color-mix(in srgb, var(--ex-color, #b7d7ff) 55%, transparent),
+    0 0 40px color-mix(in srgb, var(--ex-color, #b7d7ff) 24%, transparent),
+    inset 0 0 10px #fff6;
+}
+.ex-living-icon--inferno { --ex-color: #ff6a28; }
 .ex-living-icon--afterglow { --ex-color: #ffcf8e; }
 .ex-living-icon--starfall { --ex-color: #a8b9ff; }
 .ex-living-icon--contour { --ex-color: #ffdc83; }
@@ -681,7 +530,7 @@ button:disabled {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  padding: 3px;
+  padding: var(--ex-ring, 2px);
   z-index: 3;
   pointer-events: none;
   background: conic-gradient(from var(--ex-spin) at 50% 50%,
@@ -700,114 +549,19 @@ button:disabled {
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
-  opacity: .9;
+  opacity: .92;
   animation: exRingSpin 5.2s linear infinite;
 }
 .ex-living-icon--phase-break::after { animation: exRingSpin 3.4s linear infinite, exPhaseRing 2.4s steps(4) infinite; }
-.ex-living-icon>img { animation: exPortraitBreath 6s ease-in-out infinite; }
+.ex-living-icon>img { animation: exPortraitBreath 6.5s ease-in-out infinite; }
 @keyframes exRingSpin { to { --ex-spin: 360deg; } }
 @keyframes exPhaseRing { 0%, 100% { opacity: .9; } 28% { opacity: .25; } 31% { opacity: 1; } 62% { opacity: .4; } }
-
-/* ── 両馬二郎 / inferno：炉のように燃える炎床 ── */
-.ex-coals { transform-box: fill-box; transform-origin: 50% 100%; animation: exCoalPulse 1.9s ease-in-out infinite; }
-.ex-flame { transform-box: fill-box; transform-origin: 50% 100%; mix-blend-mode: screen; }
-.ex-flame--back { opacity: .85; animation: exFlameWave 1.6s ease-in-out infinite alternate; animation-delay: calc(var(--n) * -.19s); }
-.ex-flame--front { animation: exFlameWave 1.15s ease-in-out infinite alternate; animation-delay: calc(var(--n) * -.23s); filter: drop-shadow(0 -1px 2px rgba(255, 220, 140, .8)); }
-.ex-lick { stroke: #ffe9a8; stroke-width: 1.4; stroke-linecap: round; stroke-dasharray: 18 60; filter: drop-shadow(0 0 2px #ff9a3d); opacity: .9; animation: exLickRun 1.9s linear infinite; animation-delay: calc(var(--n) * -.63s); }
-@keyframes exCoalPulse { 0%, 100% { opacity: .7; transform: scaleX(1); } 40% { opacity: 1; transform: scaleX(1.08); } 55% { opacity: .85; } }
-@keyframes exFlameWave { from { transform: scaleY(.72) scaleX(1.04) skewX(-3.5deg); } to { transform: scaleY(1.06) scaleX(.97) skewX(3.5deg); } }
-@keyframes exLickRun { from { stroke-dashoffset: 78; } to { stroke-dashoffset: 0; } }
-
-/* ── 数理零 / afterglow：夕陽の黒板に数式が自己記述される ── */
-.ex-axes { stroke: rgba(255, 240, 210, .45); stroke-width: .9; stroke-dasharray: 2.5 3.5; }
-.ex-axiom { fill: rgba(255, 214, 160, .16); font-size: 60px; font-weight: 700; transform-box: fill-box; transform-origin: center; animation: exAxiomBreathe 7s ease-in-out infinite; }
-.ex-plot { stroke: #ffd9a3; stroke-width: 1.7; stroke-linecap: round; opacity: .85; filter: drop-shadow(0 0 3px #ffbf75); }
-.ex-plot--para { stroke-dasharray: 240; animation: exChalkDraw 6.6s cubic-bezier(.5, .05, .5, .95) infinite; }
-.ex-plot--sine { stroke: #fff3d8; stroke-width: 1.3; stroke-dasharray: 240; animation: exChalkDraw 7.4s cubic-bezier(.5, .05, .5, .95) infinite; animation-delay: -3.1s; }
-.ex-formulas text { fill: #fff4d6; font-size: 12.5px; font-weight: 700; letter-spacing: .3px; opacity: 0; filter: drop-shadow(0 0 2px rgba(255, 210, 140, .9)); animation: exInkSeep 7.2s ease-in-out infinite; animation-delay: calc(var(--n) * -1.2s); }
-@keyframes exAxiomBreathe { 0%, 100% { opacity: .55; transform: rotate(-4deg) scale(.96); } 50% { opacity: 1; transform: rotate(2deg) scale(1.03); } }
-@keyframes exChalkDraw { 0% { stroke-dashoffset: 240; opacity: 0; } 8% { opacity: .95; } 42% { stroke-dashoffset: 0; opacity: .95; } 62% { stroke-dashoffset: 0; opacity: .9; } 82%, 100% { stroke-dashoffset: 0; opacity: 0; } }
-@keyframes exInkSeep { 0%, 100% { opacity: 0; transform: translateY(3px); } 12%, 46% { opacity: .92; transform: translateY(0); } 66% { opacity: .5; transform: translateY(-2px); } 78% { opacity: 0; transform: translateY(-3px); } }
-
-/* ── 寺地星 / starfall：星座が結ばれ、流星が駆ける ── */
-.ex-starmap { stroke: rgba(197, 214, 255, .4); stroke-width: 1; stroke-dasharray: 3 6; animation: exMapCrawl 20s linear infinite; }
-.ex-web { stroke: #bcd2ff; stroke-width: .9; stroke-linecap: round; stroke-dasharray: 200; stroke-dashoffset: 200; filter: drop-shadow(0 0 1.5px #9db8ff); animation: exWebDraw 9s ease-in-out infinite; }
-.ex-starpt { fill: #fff; filter: drop-shadow(0 0 2.5px #cfe0ff); transform-box: fill-box; transform-origin: center; animation: exStarTwinkle 2.8s ease-in-out infinite; animation-delay: calc(var(--n) * -.47s); }
-.ex-comet { stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 30 230; animation: exCometRun 3s linear infinite; }
-.ex-comet--b { stroke-width: 1.3; animation-duration: 4.3s; animation-delay: -1.4s; }
-@keyframes exMapCrawl { to { stroke-dashoffset: -180; } }
-@keyframes exWebDraw { 0% { stroke-dashoffset: 200; opacity: 0; } 10% { opacity: .85; } 45%, 70% { stroke-dashoffset: 0; opacity: .85; } 88%, 100% { stroke-dashoffset: 0; opacity: 0; } }
-@keyframes exStarTwinkle { 0%, 100% { opacity: .3; transform: scale(.55) rotate(0deg); } 50% { opacity: 1; transform: scale(1.15) rotate(45deg); } }
-@keyframes exCometRun { from { stroke-dashoffset: -30; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } to { stroke-dashoffset: -260; opacity: 0; } }
-
-/* ── 塀勝也 / contour：生きた地形図と振動計 ── */
-.ex-ridge__line { stroke: #ffdc8b; stroke-width: 1.1; opacity: .75; transform-box: fill-box; transform-origin: center; animation: exRidgeBreath 6s ease-in-out infinite; animation-delay: calc(var(--n) * -2.1s); }
-.ex-ridge__core { stroke: #fff0c8; stroke-width: 1.3; opacity: .95; }
-.ex-ridge__sweep { stroke: #fff6d8; stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 16 224; filter: drop-shadow(0 0 3px #ffdc8b); animation: exSweepRun 5.5s linear infinite; }
-.ex-seismo { stroke: #ffd68a; stroke-width: 1.2; stroke-linecap: round; stroke-dasharray: 60 180; filter: drop-shadow(0 0 2px #ffb84d); opacity: .85; animation: exSeismoScratch 4.2s linear infinite; }
-.ex-summit { fill: rgba(255, 240, 200, .9); stroke: #ffdc8b; stroke-width: .6; animation: exSummitBlink 4s ease-in-out infinite; }
-.ex-summit-label { fill: rgba(255, 244, 214, .65); font-size: 8.5px; letter-spacing: .5px; }
-@keyframes exRidgeBreath { 0%, 100% { transform: scale(.975); } 50% { transform: scale(1.03); } }
-@keyframes exSweepRun { from { stroke-dashoffset: 240; } to { stroke-dashoffset: 0; } }
-@keyframes exSeismoScratch { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -240; } }
-@keyframes exSummitBlink { 0%, 100% { opacity: .55; } 12% { opacity: 1; } 20% { opacity: .55; } 55% { opacity: .9; } }
-
-/* ── 三重県臣 / court-pass：理屈じゃない一投の軌道 ── */
-.ex-courtlines path { stroke: rgba(158, 217, 255, .4); stroke-width: .9; }
-.ex-courtlines { animation: exCourtGlow 3s ease-in-out infinite; }
-.ex-trajectory { stroke: rgba(197, 235, 255, .45); stroke-width: 1; stroke-dasharray: 2.5 4; }
-.ex-trajectory--pulse { stroke: #eaf8ff; stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 10 230; filter: drop-shadow(0 0 2.5px #9ed9ff); animation: exPassPulse 1.7s cubic-bezier(.45, .05, .55, .95) infinite; }
-.ex-ballsquad { filter: drop-shadow(0 0 3px #dff4ff); animation: exBallFlight 1.7s cubic-bezier(.42, .04, .58, .96) infinite; }
-.ex-ball { fill: #fffbe8; stroke: #fff; stroke-width: .8; }
-.ex-ballglow { fill: none; stroke: rgba(197, 240, 255, .55); stroke-width: 2; }
-.ex-ballseam { stroke: #7fbfff; stroke-width: .9; }
-.ex-speedline { stroke: rgba(220, 245, 255, .85); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 14 10; animation: exSpeedStreak 1.15s linear infinite; }
-@keyframes exCourtGlow { 0%, 100% { opacity: .5; } 50% { opacity: .9; } }
-@keyframes exPassPulse { from { stroke-dashoffset: 0; opacity: 0; } 6% { opacity: 1; } 88% { opacity: 1; } to { stroke-dashoffset: -240; opacity: 0; } }
-@keyframes exBallFlight {
-  0% { transform: translate(0, 0) scale(1.15, .85); opacity: 0; }
-  6% { opacity: 1; }
-  12% { transform: translate(9px, -7px) scale(1); }
-  25% { transform: translate(28.4px, -21.3px); }
-  50% { transform: translate(59.5px, -41px); }
-  75% { transform: translate(93.4px, -57.4px); }
-  92% { opacity: 1; }
-  100% { transform: translate(130px, -76px) scale(.9); opacity: 0; }
-}
-@keyframes exSpeedStreak { 0% { transform: translate(-46px, 16px); opacity: 0; } 30% { opacity: .9; } 60% { opacity: 0; } 100% { transform: translate(120px, -24px); opacity: 0; } }
-
-/* ── 前-原 / phase-break：現実のティアとRGB断片 ── */
-.ex-shard { fill: rgba(255, 66, 105, .42); animation: exShardJump 1.3s steps(2) infinite; animation-delay: calc(var(--n) * -.34s); }
-.ex-shard--cyan { fill: rgba(105, 235, 255, .4); animation-name: exShardJumpB; animation-duration: 1.7s; }
-.ex-rift { stroke: #ff4269; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 34 14 8 14; filter: drop-shadow(0 0 3px #ff4269); animation: exRiftFlicker 2.1s steps(3) infinite; }
-.ex-rift--echo { stroke: #69ebff; stroke-width: 1; transform: translate(3px, 2px); filter: drop-shadow(0 0 2px #69ebff); animation: exRiftFlickerB 1.7s steps(3) infinite reverse; }
-.ex-scanband { fill: rgba(255, 255, 255, .13); mix-blend-mode: screen; animation: exScanRun 3.2s cubic-bezier(.6, .05, .35, .95) infinite; }
-.ex-corners path { stroke: rgba(255, 255, 255, .85); stroke-width: 1.4; }
-.ex-corners { animation: exCornerBlink 1.9s steps(2) infinite; }
-@keyframes exShardJump { 0%, 84%, 100% { transform: translateX(0); opacity: .35; } 88% { transform: translateX(7px); opacity: .9; } 94% { transform: translateX(-5px); opacity: .55; } }
-@keyframes exShardJumpB { 0%, 70%, 100% { transform: translateX(0); opacity: .28; } 76% { transform: translateX(-8px); opacity: .85; } 88% { transform: translateX(4px); opacity: .5; } }
-@keyframes exRiftFlicker { 0%, 100% { stroke-dashoffset: 0; opacity: .95; } 33% { stroke-dashoffset: -24; opacity: .5; } 66% { stroke-dashoffset: -52; opacity: .85; } }
-@keyframes exRiftFlickerB { 0%, 100% { stroke-dashoffset: 0; opacity: .8; } 50% { stroke-dashoffset: 40; opacity: .35; } }
-@keyframes exScanRun { 0%, 12% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 60% { opacity: .8; } 78%, 100% { transform: translateY(148px); opacity: 0; } }
-@keyframes exCornerBlink { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
-
-/* ── 地面 / strata-memory：堆積層と記憶の脈流 ── */
-.ex-magma { transform-box: fill-box; transform-origin: 50% 100%; animation: exMagmaBreath 5s ease-in-out infinite; }
-.ex-band { stroke: #eec084; stroke-width: 2.4; stroke-linecap: round; opacity: .8; animation: exStrataDrift 10s ease-in-out infinite alternate; animation-delay: calc(var(--n) * -2.7s); }
-.ex-band--dark { stroke: #8d5a33; animation-duration: 13s; }
-.ex-fossil { stroke: rgba(255, 224, 170, .75); stroke-width: 1.5; stroke-linecap: round; filter: drop-shadow(0 0 2px #eeb979); transform-box: fill-box; transform-origin: center; animation: exFossilTurn 14s ease-in-out infinite alternate; }
-.ex-veinflow { stroke: #ffd66e; stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 12 228; filter: drop-shadow(0 0 3px #ffb52e); animation: exVeinRun 8s linear infinite; }
-@keyframes exMagmaBreath { 0%, 100% { opacity: .65; transform: scaleY(.92); } 50% { opacity: 1; transform: scaleY(1.05); } }
-@keyframes exStrataDrift { from { transform: translateX(-9px); } to { transform: translateX(9px); } }
-@keyframes exFossilTurn { from { transform: rotate(-7deg) scale(.97); opacity: .55; } to { transform: rotate(9deg) scale(1.03); opacity: .9; } }
-@keyframes exVeinRun { from { stroke-dashoffset: 240; } to { stroke-dashoffset: 0; } }
-
-@keyframes exPortraitBreath { 0%, 100% { transform: scale(1.01); } 50% { transform: scale(1.065) translateY(-1%); } }
+@keyframes unitEvoGlitch { 0%, 100% { transform: translate(0); clip-path: inset(0 0 0 0); } 20% { transform: translate(3%, -2%); clip-path: inset(14% 0 69% 0); } 40% { transform: translate(-2%, 1%); clip-path: inset(68% 0 12% 0); } 60% { transform: translate(1%, 0); clip-path: inset(0 0 0 0); } }
+@keyframes exPortraitBreath { 0%, 100% { transform: scale(1.012); } 50% { transform: scale(1.07) translateY(-1.2%); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .unit-evo-fx, .unit-evo-fx *, .ex-living-icon>img { animation: none !important; transition: none !important; }
+  .ex-living-icon>img { animation: none !important; transition: none !important; }
   .ex-living-icon::after { display: none !important; }
-  .unit-evo-fx__mote { opacity: .35; }
 }
 
 /* Reading is deliberate. Touch anywhere to continue, not an automatic slideshow. */
@@ -816,7 +570,7 @@ button:disabled {
 .evolution-tap { position:absolute; bottom:max(8%,35px); right:8%; display:flex; align-items:center; gap:16px; font-size:12px; letter-spacing:.18em; text-shadow:0 2px 10px #000; }
 .evolution-tap i { width:26px; height:26px; border:1px solid var(--accent); transform:rotate(45deg); box-shadow:0 0 20px color-mix(in srgb,var(--accent) 50%,transparent); animation:exCorona 2s infinite; }
 .evolution-tap b { color:var(--accent); font-size:24px; }
-.evolution-canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.evolution-canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; mix-blend-mode:screen; }
 .evolution-art--before { animation:cinemaIdle 12s ease-in-out infinite alternate; opacity:.85; }
 .evolution-shade { background:linear-gradient(0deg,#03040af5,#03040a99 30%,transparent 68%,#03040a66),linear-gradient(90deg,#03040a55,transparent 70%); }
 .evolution-prologue,.evolution-dialogue { bottom:23%; }
@@ -870,7 +624,7 @@ button:disabled {
 @media(max-width:600px) { .evolution--beat-4 .evolution-signature { font-size:clamp(32px,8vw,48px); padding:0 5% 24%; }.evolution-tap { font-size:10px; gap:12px; }.evolution-prologue p { font-size:22px; } }
 @media(max-height:500px) { .evolution-prologue p { font-size:20px; line-height:1.5; }.evolution-dialogue p { font-size:24px; }.evolution-prologue,.evolution-dialogue { bottom:26%; }.evolution--beat-4 .evolution-signature { font-size:9vh; padding-bottom:8%; } }
 @media(prefers-reduced-motion:reduce) {
-  .evolution *, .ex-living-icon>img, .unit-evo-fx, .unit-evo-fx * { animation:none !important; transition:none !important; }
+  .evolution *, .ex-living-icon>img, .ex-fx, .ex-fx * { animation:none !important; transition:none !important; }
   .evolution--beat-2 .evolution-seal { opacity:.25; }
   .evolution-closeup,.evolution-lens { display:none; }
   .ex-living-icon::after { display:none !important; }

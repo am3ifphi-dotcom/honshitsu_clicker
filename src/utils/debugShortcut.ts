@@ -1,9 +1,8 @@
-/** Production websites do not enable the typing shortcut; local files/dev previews do. */
-export function isLocalDebugEnvironment() {
-  return import.meta.env.DEV || location.protocol === 'file:' ||
-    ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-}
-
+/**
+ * 「honshitsu」と打つと全回収（maxEverything）できる隠しコマンド。
+ * 開発サーバー・localhost・file://・本番ビルド、どの環境でも有効。
+ * 入力中（IME・テキスト欄・修飾キー）は誤爆しないようにガードする。
+ */
 export function installDebugShortcut(target: Window, activate: () => void) {
   const sequence = 'honshitsu';
   let buffer = '';
@@ -14,10 +13,12 @@ export function installDebugShortcut(target: Window, activate: () => void) {
       buffer = '';
       return;
     }
-    if (event.key.length !== 1) { buffer = ''; return; }
+    // 1文字キーのみ拾う（Enter や Tab ではリセット）
+    if (typeof event.key !== 'string' || event.key.length !== 1) { buffer = ''; return; }
     buffer = (buffer + event.key.toLowerCase()).slice(-sequence.length);
     if (buffer === sequence) { buffer = ''; activate(); }
   };
-  target.addEventListener('keydown', onKey);
-  return () => target.removeEventListener('keydown', onKey);
+  // capture フェーズで拾うと、どの要素にフォーカスがあっても確実に動く
+  target.addEventListener('keydown', onKey, { capture: true });
+  return () => target.removeEventListener('keydown', onKey, { capture: true });
 }

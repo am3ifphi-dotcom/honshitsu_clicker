@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from './game/store';
-import { installDebugShortcut, isLocalDebugEnvironment } from './utils/debugShortcut';
+import { installDebugShortcut } from './utils/debugShortcut';
 import { derive, spTotal, spSpent } from './game/formulas';
 import { CHAPTERS } from './game/data/story';
 import { THREADS } from './game/data/chatter';
@@ -108,10 +108,8 @@ export default function App() {
     if (chatOpen) setSeenId(lastChatId);
   }, [chatOpen, lastChatId]);
 
-  useEffect(() => {
-    if (!isLocalDebugEnvironment()) return;
-    return installDebugShortcut(window, () => useGame.getState().maxEverything());
-  }, []);
+  // 「honshitsu」で全回収。ローカル/プレビュー/本番ビルドを問わず有効。
+  useEffect(() => installDebugShortcut(window, () => useGame.getState().maxEverything()), []);
 
   const badge: Partial<Record<Tab, boolean>> = {
     gacha: cans >= 5 || tickets > 0,
@@ -166,6 +164,7 @@ export default function App() {
           ))}
           <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-2 text-[10px] leading-relaxed text-slate-400">
             ヒント：✝を連打→発生源を買う→部員を育てる→ストーリーで戦う→偏差値60で卒業（転生）。
+            <br />※どんな環境でも <b className="text-purple-200">honshitsu</b> と打てば全回収。
           </div>
         </nav>
 
