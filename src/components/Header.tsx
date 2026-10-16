@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
+import { SlidersHorizontal, Volume2, VolumeX } from 'lucide-react';
 import { useGame } from '../game/store';
 import { derive, devTier, gradeName, xpToNext, spTotal, spSpent } from '../game/formulas';
 import { fmt } from '../game/format';
 import { Bar } from './ui';
 import LoginBonusModal from './LoginBonusModal';
 import UpdateGiftModal from './UpdateGiftModal';
+import AudioSettingsModal from './AudioSettingsModal';
+import CreditsModal from './CreditsModal';
+import { getSettings, onSettingsChange, setSettings, unlockAudio } from '../utils/audio';
+import { sfx } from '../utils/sfx';
 
 function DevNum({ value, className }: { value: number; className: string }) {
   const [anim, setAnim] = useState(0);
@@ -51,6 +56,11 @@ export default function Header() {
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
+  const [showAudio, setShowAudio] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
+  const [muted, setMuted] = useState(() => getSettings().muted);
+
+  useEffect(() => onSettingsChange((s2) => setMuted(s2.muted)), []);
 
   const today = new Date().toISOString().split('T')[0];
   const canClaimDaily = s.lastLoginDate !== today;
@@ -86,6 +96,33 @@ export default function Header() {
                 {canClaimDaily && (
                   <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-rose-500" />
                 )}
+              </button>
+
+              <button
+                onClick={() => {
+                  unlockAudio();
+                  const next = setSettings({ muted: !muted });
+                  setMuted(next.muted);
+                  if (!next.muted) sfx.toggle();
+                }}
+                className="hidden items-center gap-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs font-bold text-slate-300 hover:bg-white/15 sm:flex"
+                title={muted ? 'ミュート解除' : 'ミュート'}
+                aria-label={muted ? 'ミュート解除' : 'ミュート'}
+              >
+                {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+              </button>
+
+              <button
+                onClick={() => {
+                  unlockAudio();
+                  sfx.ui();
+                  setShowAudio(true);
+                }}
+                className="flex items-center gap-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs font-bold text-slate-300 hover:bg-white/15"
+                title="音の設定"
+                aria-label="音の設定"
+              >
+                <SlidersHorizontal size={14} />
               </button>
 
               <button
@@ -158,6 +195,8 @@ export default function Header() {
 
       {showLoginModal && <LoginBonusModal open onClose={() => setShowLoginModal(false)} />}
       {showGiftModal && <UpdateGiftModal open onClose={() => setShowGiftModal(false)} />}
+      <AudioSettingsModal open={showAudio} onClose={() => setShowAudio(false)} onCredits={() => { setShowAudio(false); setShowCredits(true); }} />
+      <CreditsModal open={showCredits} onClose={() => setShowCredits(false)} />
     </header>
   );
 }

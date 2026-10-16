@@ -9,6 +9,7 @@ import type { EnemyDef } from '../game/types';
 import { fmt } from '../game/format';
 import { Bar, UnitIcon } from './ui';
 import battleBg from '../assets/img/battle.jpg';
+import { sfx } from '../utils/sfx';
 
 interface Props {
   title: string;
@@ -29,6 +30,8 @@ export default function Battle({ title, rec, enemies, onEnd, onRetreat }: Props)
   const autoRef = useRef(true);
   const onEndRef = useRef(onEnd);
   const ended = useRef(false);
+  const lastFloat = useRef(0);
+  const lastHitSfx = useRef(0);
   const items = useGame((s) => s.items);
   const evolvedUnits = useGame((s) => s.evolvedUnits);
   const [myDev] = useState(() => derive(useGame.getState()).battleDev);
@@ -51,8 +54,24 @@ export default function Battle({ title, rec, enemies, onEnd, onRetreat }: Props)
       st.autoSkill = autoRef.current;
       stepBattle(st, dt * speedRef.current);
       force();
+
+      // 新しいダメージ表示が出たら打撃音（Kenney / CC0）を鳴らす。鳴らしすぎないよう間引く。
+      const newest = st.floats.length ? st.floats[st.floats.length - 1].id : 0;
+      if (newest > lastFloat.current && t - lastHitSfx.current > 110) {
+        lastFloat.current = newest;
+        lastHitSfx.current = t;
+        const f = st.floats[st.floats.length - 1];
+        const boss = f.uid.startsWith('e') && !!st.enemies.find((e) => e.uid === f.uid)?.boss;
+        if (f.big) sfx.slash();
+        else if (boss) sfx.hitHeavy();
+        else if (f.uid.startsWith('e')) sfx.hit();
+        else sfx.block();
+      }
+
       if (st.over && !ended.current) {
         ended.current = true;
+        if (st.over === 'win') sfx.win();
+        else sfx.lose();
         window.setTimeout(() => onEndRef.current(st.over === 'win'), 1400);
       }
     }, 50);
@@ -145,7 +164,13 @@ export default function Battle({ title, rec, enemies, onEnd, onRetreat }: Props)
           <button onClick={() => setAuto((a) => !a)} className={`rounded-lg border px-2 py-1 text-xs font-bold ${auto ? 'border-emerald-300 bg-emerald-600/80' : 'border-white/20 bg-black/40 text-slate-300'}`}>
             オートスキル{auto ? 'ON' : 'OFF'}
           </button>
-          <button onClick={onRetreat} className="rounded-lg border border-white/20 bg-black/40 px-2 py-1 text-xs text-slate-300 hover:bg-black/60">
+          <button
+            onClick={() => {
+              sfx.soft();
+              onRetreat();
+            }}
+            className="rounded-lg border border-white/20 bg-black/40 px-2 py-1 text-xs text-slate-300 hover:bg-black/60"
+          >
             早退する
           </button>
         </div>

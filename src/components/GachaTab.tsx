@@ -168,6 +168,7 @@ export default function GachaTab() {
             <button
               key={p.id}
               onClick={() => {
+                sfx.select();
                 setPoolId(p.id);
                 setAutoRunning(false);
               }}

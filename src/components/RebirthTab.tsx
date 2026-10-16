@@ -254,8 +254,11 @@ export default function RebirthTab() {
               const g = useGame.getState().rebirth();
               setConfirmNormal(false);
               if (g > 0) {
+                sfx.rebirthJingle();
                 setAnimNormal({ gain: g, n });
                 window.setTimeout(() => setAnimNormal(null), 4200);
+              } else {
+                sfx.error();
               }
             }}
           >
@@ -290,8 +293,11 @@ export default function RebirthTab() {
               const g = useGame.getState().ultraRebirth();
               setConfirmUltra(false);
               if (g > 0) {
+                sfx.rebirthJingle();
                 setAnimUltra({ gain: g, n });
                 window.setTimeout(() => setAnimUltra(null), 5000);
+              } else {
+                sfx.error();
               }
             }}
           >

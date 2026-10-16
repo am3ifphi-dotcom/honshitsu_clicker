@@ -4,6 +4,7 @@ import { SPEAKERS } from '../game/data/chatter';
 import { getUnitForm } from '../game/data/units';
 import { useGame } from '../game/store';
 import bg from '../assets/img/title.jpg';
+import { sfx } from '../utils/sfx';
 
 export default function Dialogue({ title, lines, onDone, doneLabel = '次へ' }: { title: string; lines: Line[]; onDone: () => void; doneLabel?: string }) {
   const [i, setI] = useState(0);
@@ -14,8 +15,13 @@ export default function Dialogue({ title, lines, onDone, doneLabel = '次へ' }:
   const isNarr = s === 'narr' || s === 'sys';
   const last = i >= lines.length - 1;
   const next = () => {
-    if (last) onDone();
-    else setI(i + 1);
+    if (last) {
+      sfx.confirm();
+      onDone();
+    } else {
+      sfx.page();
+      setI(i + 1);
+    }
   };
 
   return (
@@ -24,7 +30,13 @@ export default function Dialogue({ title, lines, onDone, doneLabel = '次へ' }:
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/20 to-black/80" />
       <div className="relative flex items-center justify-between gap-2 p-3">
         <div className="min-w-0 truncate font-display text-sm text-purple-100 sm:text-base">{title}</div>
-        <button onClick={onDone} className="shrink-0 rounded-lg border border-white/20 bg-black/40 px-3 py-1 text-xs hover:bg-black/60">
+        <button
+          onClick={() => {
+            sfx.back();
+            onDone();
+          }}
+          className="shrink-0 rounded-lg border border-white/20 bg-black/40 px-3 py-1 text-xs hover:bg-black/60"
+        >
           スキップ ⏭
         </button>
       </div>
@@ -45,7 +57,7 @@ export default function Dialogue({ title, lines, onDone, doneLabel = '次へ' }:
             {sp.emoji} {sp.name}
           </div>
         )}
-        <p key={i} className={`anim-fadein ${isNarr ? 'text-center italic text-slate-200' : 'text-base text-white sm:text-lg'}`}>
+        <p key={i} className={`anim-fadein font-story ${isNarr ? 'text-center italic text-slate-200' : 'text-base text-white sm:text-lg'}`}>
           {t}
         </p>
         <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">

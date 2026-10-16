@@ -53,6 +53,11 @@ export default function EvolutionCutscene({ unitId, replay = false, onComplete }
     return () => window.clearTimeout(timer);
   }, [beat]);
 
+  // 進化の結果画面（beat 5）に到達したら締めジングル（Kenney Music Jingles / CC0）
+  useEffect(() => {
+    if (beat === 5) sfx.evolutionJingle();
+  }, [beat]);
+
   const advance = () => {
     const now = performance.now();
     if (now < advanceLock.current || beat > 1) return;

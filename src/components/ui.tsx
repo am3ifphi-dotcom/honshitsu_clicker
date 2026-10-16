@@ -1,4 +1,5 @@
-import { useId } from 'react';
+import { useEffect, useId } from 'react';
+import { sfx } from '../utils/sfx';
 import type { CSSProperties, ReactNode } from 'react';
 import type { ItemDef, Rarity, UnitDef, UnitType } from '../game/types';
 
@@ -306,6 +307,10 @@ export function Stars({ n, max = 5 }: { n: number; max?: number }) {
 }
 
 export function Modal({ open, onClose, title, children, wide = false }: { open: boolean; onClose?: () => void; title?: ReactNode; children: ReactNode; wide?: boolean }) {
+  // 開いた瞬間だけ「開く音」（Kenney / CC0）を鳴らす
+  useEffect(() => {
+    if (open) sfx.open();
+  }, [open]);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm" onClick={onClose}>
@@ -314,7 +319,14 @@ export function Modal({ open, onClose, title, children, wide = false }: { open: 
         onClick={(e) => e.stopPropagation()}
       >
         {onClose && (
-          <button onClick={onClose} className="absolute right-3 top-2 text-xl text-white/60 hover:text-white" aria-label="閉じる">
+          <button
+            onClick={() => {
+              sfx.close();
+              onClose();
+            }}
+            className="absolute right-3 top-2 text-xl text-white/60 hover:text-white"
+            aria-label="閉じる"
+          >
             ✕
           </button>
         )}
@@ -333,6 +345,15 @@ const VARIANTS: Record<Variant, string> = {
   danger: 'bg-gradient-to-b from-rose-500 to-rose-700 hover:from-rose-400 text-white border-rose-300/40',
   green: 'bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 text-white border-emerald-300/40',
 };
+
+let lastHover = 0;
+/** ホバー音（Kenney UI Audio / CC0）。移動のたびに鳴ると五月蠅いので 60ms 間引く。 */
+function hoverTick() {
+  const now = Date.now();
+  if (now - lastHover < 60) return;
+  lastHover = now;
+  sfx.hover();
+}
 
 export function Btn({
   children,
@@ -355,6 +376,9 @@ export function Btn({
     <button
       title={title}
       onClick={onClick}
+      onMouseEnter={() => {
+        if (!disabled) hoverTick();
+      }}
       disabled={disabled}
       className={`tap-none rounded-xl border font-bold shadow-sm transition active:scale-95 disabled:opacity-40 disabled:saturate-0 disabled:active:scale-100 ${small ? 'px-2.5 py-1 text-xs' : 'px-4 py-2 text-sm'} ${VARIANTS[variant]} ${className}`}
     >
@@ -381,6 +405,7 @@ export function Chip({ active, onClick, children }: { active: boolean; onClick: 
   return (
     <button
       onClick={onClick}
+      onMouseEnter={hoverTick}
       className={`tap-none rounded-full border px-3 py-1 text-xs font-bold transition ${active ? 'border-purple-300 bg-purple-600 text-white' : 'border-white/15 bg-white/5 text-slate-300 hover:bg-white/10'}`}
     >
       {children}
