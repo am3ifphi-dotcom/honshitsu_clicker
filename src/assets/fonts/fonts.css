@@ -1,0 +1,66 @@
+/* 自動生成: python3 scripts/build-fonts.py — 手編集禁止 */
+
+/* 出典・ライセンス: src/assets/fonts/licenses/ と CREDITS.md（すべて SIL Open Font License 1.1） */
+
+/* Dela Gothic One 400 — 1707 glyphs, subsetted from @fontsource/dela-gothic-one (SIL OFL 1.1) */
+@font-face {
+  font-family: 'Dela Gothic One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./dela-gothic-one-400.woff2') format('woff2');
+}
+
+/* M PLUS Rounded 1c 400 — 1728 glyphs, subsetted from @fontsource/m-plus-rounded-1c (SIL OFL 1.1) */
+@font-face {
+  font-family: 'M PLUS Rounded 1c';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./m-plus-rounded-1c-400.woff2') format('woff2');
+}
+
+/* M PLUS Rounded 1c 500 — 1728 glyphs, subsetted from @fontsource/m-plus-rounded-1c (SIL OFL 1.1) */
+@font-face {
+  font-family: 'M PLUS Rounded 1c';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./m-plus-rounded-1c-500.woff2') format('woff2');
+}
+
+/* M PLUS Rounded 1c 700 — 1728 glyphs, subsetted from @fontsource/m-plus-rounded-1c (SIL OFL 1.1) */
+@font-face {
+  font-family: 'M PLUS Rounded 1c';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./m-plus-rounded-1c-700.woff2') format('woff2');
+}
+
+/* M PLUS Rounded 1c 800 — 1728 glyphs, subsetted from @fontsource/m-plus-rounded-1c (SIL OFL 1.1) */
+@font-face {
+  font-family: 'M PLUS Rounded 1c';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('./m-plus-rounded-1c-800.woff2') format('woff2');
+}
+
+/* Shippori Mincho 600 — 1690 glyphs, subsetted from @fontsource/shippori-mincho (SIL OFL 1.1) */
+@font-face {
+  font-family: 'Shippori Mincho';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./shippori-mincho-600.woff2') format('woff2');
+}
+
+/* Shippori Mincho 700 — 1690 glyphs, subsetted from @fontsource/shippori-mincho (SIL OFL 1.1) */
+@font-face {
+  font-family: 'Shippori Mincho';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./shippori-mincho-700.woff2') format('woff2');
+}

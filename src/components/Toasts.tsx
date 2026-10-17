@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { useGame } from '../game/store';
+import { sfx } from '../utils/sfx';
 
 const CLS = {
   info: 'border-white/20 bg-slate-800/95 text-slate-100',
@@ -9,6 +11,17 @@ const CLS = {
 
 export default function Toasts() {
   const toasts = useGame((s) => s.toasts);
+  const lastId = useRef(0);
+
+  useEffect(() => {
+    const latest = toasts[toasts.length - 1];
+    if (!latest || latest.id <= lastId.current) return;
+    lastId.current = latest.id;
+    if (latest.text.startsWith('🏆')) sfx.achievement();
+    else if (latest.kind === 'rare') sfx.crystal();
+    else sfx.notify();
+  }, [toasts]);
+
   return (
     <div className="pointer-events-none fixed left-1/2 top-24 z-[70] flex w-[min(92vw,440px)] -translate-x-1/2 flex-col gap-2">
       {toasts.map((t) => (

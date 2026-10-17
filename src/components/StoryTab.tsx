@@ -10,6 +10,7 @@ import Dialogue from './Dialogue';
 import Battle from './Battle';
 import RewardModal from './RewardModal';
 import { Btn, Modal, Panel, UnitIcon } from './ui';
+import { sfx } from '../utils/sfx';
 
 type Phase =
   | { k: 'list' }
@@ -56,10 +57,12 @@ export default function StoryTab() {
 
   const start = (ch: Chapter, skipIntro: boolean) => {
     if (!hasParty) {
+      sfx.error();
       useGame.getState().toast('部員を編成してください（部員タブ）', 'bad');
       return;
     }
     setBattleKey((k) => k + 1);
+    if (skipIntro) sfx.story();
     setPhase(skipIntro ? { k: 'battle', ch } : { k: 'intro', ch });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

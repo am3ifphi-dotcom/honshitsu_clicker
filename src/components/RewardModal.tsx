@@ -3,7 +3,9 @@ import { ITEM_MAP } from '../game/data/items';
 import { getUnitForm } from '../game/data/units';
 import { useGame } from '../game/store';
 import { fmt } from '../game/format';
+import { useEffect } from 'react';
 import { Btn, ItemIcon, Modal, UnitIcon } from './ui';
+import { sfx } from '../utils/sfx';
 
 function Row({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
@@ -17,6 +19,9 @@ function Row({ icon, label, value }: { icon: string; label: string; value: strin
 
 export default function RewardModal({ rw, title, onClose }: { rw: RewardSummary | null; title: string; onClose: () => void }) {
   const evolvedUnits = useGame((s) => s.evolvedUnits);
+  useEffect(() => {
+    if (rw && rw.cans > 0) sfx.can();
+  }, [rw]);
   if (!rw) return null;
   const unit = rw.unit ? getUnitForm(rw.unit, !!evolvedUnits?.[rw.unit]) : undefined;
   return (

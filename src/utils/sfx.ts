@@ -1,259 +1,278 @@
-// 召喚演出用の効果音（WebAudio合成・外部ファイル不要）
-let ctx: AudioContext | null = null;
+/**
+ * 効果音・ジングルの統一 API。
+ *
+ * 実体は外部アセット（Kenney の CC0 パック）で、`src/assets/audio/` に同梱している。
+ * 出典・作者・ライセンスは `src/assets/manifest.json` / CREDITS.md を参照。
+ *
+ * サンプルがまだデコードされていない／取得に失敗した場合は `src/utils/synth.ts` の
+ * WebAudio 合成音にフォールバックするので、素材が欠けてもゲームは壊れない。
+ */
+import { getContext, getBuffer, isSilent, play, warm, type PlayOptions } from './audio';
+import { duck } from './bgm';
+import * as synth from './synth';
 
-function getCtx(): AudioContext | null {
-  try {
-    if (!ctx) {
-      const W = window as unknown as {
-        AudioContext?: typeof AudioContext;
-        webkitAudioContext?: typeof AudioContext;
-      };
-      const Ctor = W.AudioContext ?? W.webkitAudioContext;
-      if (!Ctor) return null;
-      ctx = new Ctor();
-    }
-    if (ctx.state === 'suspended') void ctx.resume();
-    return ctx;
-  } catch {
-    return null;
+type Layer = { name: string; opts?: PlayOptions };
+
+/** 1つでも鳴れば true。全部失敗した場合のみ合成音を鳴らす。 */
+function emit(layers: Layer[], fallback?: () => void, ducking = 0): boolean {
+  if (isSilent()) return false;
+  let ok = false;
+  for (const l of layers) {
+    if (play(l.name, l.opts)) ok = true;
   }
+  if (ok && ducking) duck(ducking, 1.8);
+  if (!ok && fallback) fallback();
+  return ok;
 }
 
-function noiseBuffer(c: AudioContext, seconds: number) {
-  const buf = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * seconds)), c.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  return buf;
+/** 合成音レイヤー（重い演出で外部サンプルに重ねる）。 */
+function layerSynth(fn: (c: AudioContext, when: number) => void, delay = 0) {
+  const c = getContext();
+  if (!c) return;
+  fn(c, c.currentTime + 0.02 + delay);
 }
 
-function amp(c: AudioContext, when: number, peak: number, attack: number, decay: number) {
-  const g = c.createGain();
-  g.gain.setValueAtTime(0.0001, when);
-  g.gain.linearRampToValueAtTime(peak, when + attack);
-  g.gain.exponentialRampToValueAtTime(0.0001, when + attack + decay);
-  return g;
-}
+export const JINGLES = {
+  achievement: 'jingles_NES05',
+  ultraReveal: 'jingles_HIT11',
+  victory: 'jingles_HIT03',
+  defeat: 'jingles_SAX13',
+  login: 'jingles_PIZZI07',
+  rebirth: 'jingles_SAX07',
+  evolution: 'jingles_STEEL02',
+} as const;
 
-function boom(c: AudioContext, when: number, volume = 0.5) {
-  // 低音の衝撃波
-  const o = c.createOscillator();
-  o.type = 'sine';
-  o.frequency.setValueAtTime(150, when);
-  o.frequency.exponentialRampToValueAtTime(36, when + 0.55);
-  const g = amp(c, when, volume, 0.008, 0.6);
-  o.connect(g).connect(c.destination);
-  o.start(when);
-  o.stop(when + 0.7);
-  // 破裂ノイズ
-  const n = c.createBufferSource();
-  n.buffer = noiseBuffer(c, 0.35);
-  const f = c.createBiquadFilter();
-  f.type = 'lowpass';
-  f.frequency.setValueAtTime(2400, when);
-  f.frequency.exponentialRampToValueAtTime(180, when + 0.3);
-  const ng = amp(c, when, volume * 0.65, 0.005, 0.3);
-  n.connect(f).connect(ng).connect(c.destination);
-  n.start(when);
-  n.stop(when + 0.4);
-}
-
-function riser(c: AudioContext, when: number, volume = 0.3) {
-  // 盛り上げのうなり
-  const o = c.createOscillator();
-  o.type = 'sawtooth';
-  o.frequency.setValueAtTime(180, when);
-  o.frequency.exponentialRampToValueAtTime(920, when + 0.62);
-  const f = c.createBiquadFilter();
-  f.type = 'bandpass';
-  f.Q.value = 6;
-  f.frequency.setValueAtTime(320, when);
-  f.frequency.exponentialRampToValueAtTime(2200, when + 0.62);
-  const g = amp(c, when, volume, 0.28, 0.36);
-  o.connect(f).connect(g).connect(c.destination);
-  o.start(when);
-  o.stop(when + 0.75);
-}
-
-function shimmer(c: AudioContext, when: number, volume = 0.22) {
-  // キラキラ（アルペジオ）
-  const notes = [1046.5, 1318.5, 1568, 2093, 2637];
-  notes.forEach((hz, i) => {
-    const t = when + i * 0.085;
-    const o = c.createOscillator();
-    o.type = 'triangle';
-    o.frequency.value = hz;
-    const g = amp(c, t, volume * (1 - i * 0.13), 0.006, 0.5);
-    o.connect(g).connect(c.destination);
-    o.start(t);
-    o.stop(t + 0.55);
-  });
-}
-
-function glitchBlips(c: AudioContext, when: number, volume = 0.2) {
-  // LR用の崩壊音
-  for (let i = 0; i < 4; i++) {
-    const t = when + i * 0.07;
-    const o = c.createOscillator();
-    o.type = i % 2 ? 'square' : 'sawtooth';
-    o.frequency.setValueAtTime(120 + Math.random() * 900, t);
-    o.frequency.exponentialRampToValueAtTime(60 + Math.random() * 200, t + 0.06);
-    const g = amp(c, t, volume, 0.003, 0.055);
-    o.connect(g).connect(c.destination);
-    o.start(t);
-    o.stop(t + 0.08);
-  }
-  const n = c.createBufferSource();
-  n.buffer = noiseBuffer(c, 0.18);
-  const ng = amp(c, when, volume * 0.5, 0.01, 0.16);
-  n.connect(ng).connect(c.destination);
-  n.start(when);
-  n.stop(when + 0.2);
-}
-
-function deep(c: AudioContext, when: number, volume = 0.4) {
-  // 「地面は忘れない」みたいな重低音
-  const o = c.createOscillator();
-  o.type = 'sine';
-  o.frequency.setValueAtTime(58, when);
-  o.frequency.exponentialRampToValueAtTime(30, when + 1.1);
-  const g = amp(c, when, volume, 0.02, 1.2);
-  o.connect(g).connect(c.destination);
-  o.start(when);
-  o.stop(when + 1.35);
+/** 起動直後・タイトル開始後に呼ぶと、よく使う音がカクつかない。 */
+export function preload(): void {
+  if (isSilent()) return;
+  void warm([
+    'click_002',
+    'click_004',
+    'select_004',
+    'confirmation_001',
+    'error_004',
+    'pluck_002',
+    'switch_003',
+    'impactMetal_heavy_000',
+    'impactPlate_medium_001',
+    'handleCoins',
+    'maximize_004',
+    'impactBell_heavy_000',
+    JINGLES.ultraReveal,
+  ]);
 }
 
 export const sfx = {
-  /** rank: 3=SSR 4=UR 5=LR */
-  reveal(rank: number) {
-    const c = getCtx();
-    if (!c) return;
-    const t = c.currentTime + 0.02;
-    try {
-      riser(c, t, rank >= 4 ? 0.32 : 0.22);
-      boom(c, t + 0.58, rank >= 5 ? 0.62 : rank >= 4 ? 0.55 : 0.45);
-      if (rank >= 5) {
-        glitchBlips(c, t + 0.56, 0.26);
-        deep(c, t + 0.6, 0.5);
-        shimmer(c, t + 1.05, 0.14);
-      } else if (rank >= 4) {
-        shimmer(c, t + 1.0, 0.26);
-        deep(c, t + 0.62, 0.3);
-      } else {
-        shimmer(c, t + 1.0, 0.2);
-      }
-    } catch {
-      /* 無音でも演出は続行 */
-    }
-  },
+  preload,
+
+  /* ---------------------------------------------------------- クリッカー */
   tap() {
-    const c = getCtx();
-    if (!c) return;
-    try {
-      const t = c.currentTime + 0.01;
-      const o = c.createOscillator();
-      o.type = 'triangle';
-      o.frequency.value = 660;
-      const g = amp(c, t, 0.12, 0.004, 0.12);
-      o.connect(g).connect(c.destination);
-      o.start(t);
-      o.stop(t + 0.16);
-    } catch {
-      /* noop */
-    }
+    // click_002 は 0.01s と非常に短いため、impactSoft（0.12s）を重ねて打感を出す
+    emit(
+      [
+        { name: 'click_002', opts: { volume: 0.5, jitter: 0.04 } },
+        { name: 'impactSoft_medium_000', opts: { volume: 0.32, jitter: 0.05 } },
+      ],
+      synth.tap,
+    );
   },
   crit() {
-    const c = getCtx();
-    if (!c) return;
-    try {
-      const t = c.currentTime + 0.01;
-      const o = c.createOscillator();
-      o.type = 'sawtooth';
-      o.frequency.setValueAtTime(440, t);
-      o.frequency.exponentialRampToValueAtTime(1320, t + 0.15);
-      const g = amp(c, t, 0.2, 0.005, 0.2);
-      o.connect(g).connect(c.destination);
-      o.start(t);
-      o.stop(t + 0.22);
-    } catch {
-      /* noop */
-    }
+    emit(
+      [
+        { name: 'pluck_002', opts: { volume: 0.7 } },
+        { name: 'impactGlass_heavy_001', opts: { volume: 0.22, delay: 0.02 } },
+      ],
+      synth.crit,
+    );
   },
-  gacon() {
-    const c = getCtx();
-    if (!c) return;
-    try {
-      const t = c.currentTime + 0.01;
-      // レバー引く音＆金属音
-      const o1 = c.createOscillator();
-      o1.type = 'triangle';
-      o1.frequency.setValueAtTime(180, t);
-      o1.frequency.exponentialRampToValueAtTime(60, t + 0.18);
-      const g1 = amp(c, t, 0.35, 0.01, 0.2);
-      o1.connect(g1).connect(c.destination);
-      o1.start(t);
-      o1.stop(t + 0.25);
 
-      // 缶が落ちてゴトッと当たる音
-      const t2 = t + 0.12;
-      const n = c.createBufferSource();
-      n.buffer = noiseBuffer(c, 0.2);
-      const f = c.createBiquadFilter();
-      f.type = 'bandpass';
-      f.frequency.setValueAtTime(450, t2);
-      f.Q.value = 4;
-      const ng = amp(c, t2, 0.4, 0.008, 0.25);
-      n.connect(f).connect(ng).connect(c.destination);
-      n.start(t2);
-      n.stop(t2 + 0.3);
-    } catch {
-      /* noop */
-    }
+  /* ---------------------------------------------------------- UI 全般 */
+  ui() {
+    emit([{ name: 'click_004', opts: { volume: 0.4 } }], synth.tap);
+  },
+  hover() {
+    emit([
+      { name: 'rollover2', opts: { volume: 0.16 } },
+      { name: 'tick_002', opts: { volume: 0.12 } },
+    ]);
+  },
+  select() {
+    emit([{ name: 'select_004', opts: { volume: 0.45 } }]);
+  },
+  confirm() {
+    emit([{ name: 'confirmation_001', opts: { volume: 0.5 } }]);
+  },
+  success() {
+    emit([{ name: 'maximize_004', opts: { volume: 0.5 } }]);
+  },
+  error() {
+    emit([{ name: 'error_004', opts: { volume: 0.42 } }]);
+  },
+  tab() {
+    emit([{ name: 'switch_003', opts: { volume: 0.4 } }]);
+  },
+  toggle() {
+    emit([{ name: 'toggle_002', opts: { volume: 0.45 } }]);
+  },
+  back() {
+    emit([{ name: 'back_002', opts: { volume: 0.4 } }]);
+  },
+  open() {
+    emit([{ name: 'open_003', opts: { volume: 0.3 } }]);
+  },
+  close() {
+    emit([{ name: 'close_002', opts: { volume: 0.3 } }]);
+  },
+  notify() {
+    // グループLINE の新着。0.02s の tick では埋もれるので 0.19s の drop を使う
+    emit([{ name: 'drop_003', opts: { volume: 0.4, jitter: 0.03 } }]);
+  },
+  notice() {
+    emit([{ name: 'question_002', opts: { volume: 0.4 } }]);
+  },
+
+  /* ---------------------------------------------------------- 通貨・アイテム */
+  coin() {
+    emit([{ name: 'handleCoins', opts: { volume: 0.5 } }]);
+  },
+  crystal() {
+    emit([
+      { name: 'glass_004', opts: { volume: 0.5 } },
+      { name: 'impactGlass_heavy_001', opts: { volume: 0.3, delay: 0.04 } },
+    ]);
+  },
+  item() {
+    emit([{ name: 'drop_003', opts: { volume: 0.5 } }]);
+  },
+  can() {
+    emit([{ name: 'impactPlate_medium_001', opts: { volume: 0.55 } }]);
+  },
+  equip() {
+    emit([{ name: 'metalLatch', opts: { volume: 0.5 } }]);
+  },
+
+  /* ---------------------------------------------------------- ストーリー・演出 */
+  door() {
+    emit([{ name: 'doorOpen_1', opts: { volume: 0.5 } }]);
+  },
+  story() {
+    emit([{ name: 'bookOpen', opts: { volume: 0.45 } }]);
+  },
+  page() {
+    emit([{ name: 'bookFlip2', opts: { volume: 0.45 } }]);
+  },
+
+  /* ---------------------------------------------------------- 対抗戦 */
+  hit() {
+    emit([{ name: 'impactPunch_medium_002', opts: { volume: 0.5, jitter: 0.05 } }]);
+  },
+  /** 反撃・ガードなど「木の机に当たる」系の軽い打撃 */
+  block() {
+    emit([{ name: 'impactWood_medium_000', opts: { volume: 0.45, jitter: 0.05 } }]);
+  },
+  soft() {
+    emit([{ name: 'impactSoft_medium_000', opts: { volume: 0.35, jitter: 0.05 } }]);
+  },
+  hitHeavy() {
+    emit([{ name: 'impactPunch_heavy_000', opts: { volume: 0.65, jitter: 0.04 } }]);
+  },
+  slash() {
+    emit([
+      { name: 'knifeSlice', opts: { volume: 0.45 } },
+      { name: 'impactPunch_medium_002', opts: { volume: 0.35, delay: 0.03 } },
+    ]);
+  },
+  win() {
+    emit([{ name: JINGLES.victory, opts: { volume: 0.7 } }], undefined, 0.35);
+  },
+  lose() {
+    emit([{ name: JINGLES.defeat, opts: { volume: 0.65 } }], undefined, 0.35);
+  },
+
+  /* ---------------------------------------------------------- ジングル */
+  achievement() {
+    emit([{ name: JINGLES.achievement, opts: { volume: 0.6 } }], undefined, 0.45);
+  },
+  login() {
+    emit([{ name: JINGLES.login, opts: { volume: 0.6 } }], undefined, 0.45);
+  },
+  rebirthJingle() {
+    emit([{ name: JINGLES.rebirth, opts: { volume: 0.7 } }], undefined, 0.4);
+  },
+  evolutionJingle() {
+    emit([{ name: JINGLES.evolution, opts: { volume: 0.65 } }], undefined, 0.4);
+  },
+
+  /* ---------------------------------------------------------- 大きな演出（既存 API 互換） */
+  /** 召喚マシン（缶が落ちてくる） */
+  gacon() {
+    emit(
+      [
+        { name: 'impactMetal_heavy_000', opts: { volume: 0.6 } },
+        { name: 'impactPlate_medium_001', opts: { volume: 0.55, delay: 0.16 } },
+        { name: 'switch13', opts: { volume: 0.3, delay: 0.02 } },
+      ],
+      synth.gacon,
+    );
   },
   hundred() {
-    const c = getCtx();
-    if (!c) return;
-    try {
-      const t = c.currentTime + 0.01;
-      for (let i = 0; i < 5; i++) {
-        const ti = t + i * 0.05;
-        const o = c.createOscillator();
-        o.type = 'triangle';
-        o.frequency.value = 500 + i * 150;
-        const g = amp(c, ti, 0.15, 0.005, 0.1);
-        o.connect(g).connect(c.destination);
-        o.start(ti);
-        o.stop(ti + 0.12);
-      }
-      boom(c, t + 0.3, 0.45);
-    } catch {
-      /* noop */
-    }
+    emit(
+      [
+        { name: 'impactMetal_heavy_000', opts: { volume: 0.6 } },
+        { name: 'handleCoins', opts: { volume: 0.6, delay: 0.12 } },
+        { name: 'confirmation_001', opts: { volume: 0.55, delay: 0.3 } },
+        { name: 'impactPlate_medium_001', opts: { volume: 0.4, delay: 0.2 } },
+      ],
+      synth.hundred,
+    );
   },
   awaken() {
-    const c = getCtx();
-    if (!c) return;
-    try {
-      const t = c.currentTime + 0.01;
-      riser(c, t, 0.3);
-      shimmer(c, t + 0.4, 0.35);
-      boom(c, t + 0.5, 0.4);
-    } catch {
-      /* noop */
-    }
+    emit([{ name: 'impactBell_heavy_000', opts: { volume: 0.65 } }], synth.awaken);
+    layerSynth((c, t) => synth.riser(c, t - 0.02, 0.22));
   },
   ultra() {
-    const c = getCtx();
+    emit(
+      [
+        { name: 'impactMining_002', opts: { volume: 0.7 } },
+        { name: 'glitch_003', opts: { volume: 0.4, delay: 0.35 } },
+        { name: 'impactBell_heavy_000', opts: { volume: 0.5, delay: 0.5 } },
+        { name: 'impactPunch_heavy_000', opts: { volume: 0.6, delay: 0.9 } },
+      ],
+      synth.ultra,
+    );
+    layerSynth((c, t) => synth.deep(c, t, 0.5));
+    layerSynth((c, t) => synth.boom(c, t + 0.9, 0.5), 0.9);
+  },
+  /** rank: 3=SSR 4=UR 5=LR */
+  reveal(rank: number) {
+    if (isSilent()) return;
+    const c = getContext();
     if (!c) return;
-    try {
-      const t = c.currentTime + 0.02;
-      deep(c, t, 0.6);
-      boom(c, t + 0.4, 0.7);
-      glitchBlips(c, t + 0.7, 0.4);
-      riser(c, t + 1.2, 0.4);
-      boom(c, t + 1.8, 0.8);
-      shimmer(c, t + 2.2, 0.4);
-    } catch {
-      /* noop */
+    const jingle = JINGLES.ultraReveal;
+    const hasJingle = getBuffer(jingle) !== null;
+
+    if (rank >= 4 && hasJingle) {
+      // 盛り上げ（合成）→ 開放の瞬間に外部ジングル
+      layerSynth((cc, t) => synth.riser(cc, t, rank >= 5 ? 0.34 : 0.28));
+      play('glitch_003', { volume: rank >= 5 ? 0.5 : 0, delay: 0.56 });
+      play(jingle, { volume: rank >= 5 ? 0.85 : 0.75, delay: 0.58 });
+      layerSynth((cc, t) => synth.boom(cc, t + 0.58, rank >= 5 ? 0.5 : 0.4), 0);
+      layerSynth((cc, t) => synth.deep(cc, t + 0.6, rank >= 5 ? 0.45 : 0.25));
+      layerSynth((cc, t) => synth.shimmer(cc, t + 1.0, rank >= 5 ? 0.16 : 0.24), 0);
+      return;
     }
+
+    if (rank >= 3) {
+      const ok = emit([
+        { name: 'confirmation_001', opts: { volume: 0.5, delay: 0.58 } },
+        { name: 'glass_004', opts: { volume: 0.4, delay: 0.6 } },
+      ]);
+      layerSynth((cc, t) => synth.riser(cc, t, 0.22));
+      layerSynth((cc, t) => synth.shimmer(cc, t + 1.0, 0.2));
+      if (!ok) synth.reveal(rank);
+      return;
+    }
+
+    synth.reveal(rank);
   },
 };

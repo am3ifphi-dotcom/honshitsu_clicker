@@ -6,6 +6,7 @@ import { getUnitForm } from '../game/data/units';
 import { EVOLUTION_FORMS, EVOLUTION_MATERIAL_SOURCES } from '../game/data/evolutions';
 import { fmt } from '../game/format';
 import { Btn, Chip, ItemIcon, Modal, Panel, RarityBadge } from './ui';
+import { sfx } from '../utils/sfx';
 
 const SCENE_LABEL: Record<string, string> = { battle: '戦闘中に使用', field: '', unit: '部員画面で使用', gacha: '召喚画面で使用' };
 
@@ -56,7 +57,7 @@ export default function ItemsTab() {
                       <div className="truncate text-[10px] italic text-slate-500">{it.flavor}</div>
                     </div>
                     {it.scene === 'field' ? (
-                      <Btn small disabled={cnt <= 0} onClick={() => useGame.getState().useItem(it.id)}>
+                      <Btn small disabled={cnt <= 0} onClick={() => { sfx.item(); useGame.getState().useItem(it.id); }}>
                         使う
                       </Btn>
                     ) : (
@@ -139,7 +140,7 @@ export default function ItemsTab() {
                     <div className="text-[11px] text-emerald-300">{desc}</div>
                     <div className="text-[10px] text-slate-400">所持：{e.id === 'cans5' ? `🥫${s.cans}` : s.items[e.id] || 0}</div>
                   </div>
-                  <Btn small variant={can ? 'gold' : 'ghost'} disabled={!can} onClick={() => useGame.getState().buyShop(e.id)}>
+                  <Btn small variant={can ? 'gold' : 'ghost'} disabled={!can} onClick={() => { sfx.coin(); useGame.getState().buyShop(e.id); }}>
                     ✝{fmt(price)}
                   </Btn>
                 </div>
@@ -159,6 +160,7 @@ export default function ItemsTab() {
               variant="gold"
               disabled={s.honshitsu < boxPrice}
               onClick={() => {
+                sfx.item();
                 const id = useGame.getState().openLostBox();
                 if (id) setBoxResult(id);
               }}
@@ -186,6 +188,7 @@ export default function ItemsTab() {
                 variant="gold"
                 disabled={s.honshitsu < boxPrice}
                 onClick={() => {
+                  sfx.item();
                   const id = useGame.getState().openLostBox();
                   if (id) setBoxResult(id);
                 }}

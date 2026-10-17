@@ -475,7 +475,7 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 <span className="font-bold">装備</span>
                 <div className="flex gap-1">
                   {equip && (
-                    <Btn small variant="ghost" onClick={() => useGame.getState().equip(id, null)}>
+                    <Btn small variant="ghost" onClick={() => { sfx.equip(); useGame.getState().equip(id, null); }}>
                       外す
                     </Btn>
                   )}
@@ -502,6 +502,7 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
                     <button
                       key={e.id}
                       onClick={() => {
+                        sfx.equip();
                         useGame.getState().equip(id, e.id);
                         setPicking(false);
                       }}
@@ -523,17 +524,17 @@ function UnitDetail({ id, onClose }: { id: string; onClose: () => void }) {
 
             {/* レベルアップ＆編成 */}
             <div className="flex flex-wrap gap-2">
-              <Btn onClick={() => useGame.getState().levelUp(id, 1)} disabled={maxed || s.honshitsu < cost1}>
+              <Btn onClick={() => { sfx.success(); useGame.getState().levelUp(id, 1); }} disabled={maxed || s.honshitsu < cost1}>
                 Lv+1
                 <div className="text-[10px] font-normal">✝{fmt(cost1)}</div>
               </Btn>
-              <Btn onClick={() => useGame.getState().levelUp(id, 10)} disabled={maxed || s.honshitsu < cost1}>
+              <Btn onClick={() => { sfx.success(); useGame.getState().levelUp(id, 10); }} disabled={maxed || s.honshitsu < cost1}>
                 Lv+{Math.max(1, n10)}
                 <div className="text-[10px] font-normal">最大✝{fmt(cost10)}</div>
               </Btn>
               <Btn
                 variant="gold"
-                onClick={() => useGame.getState().levelUp(id, 'max')}
+                onClick={() => { sfx.success(); useGame.getState().levelUp(id, 'max'); }}
                 disabled={maxed || s.honshitsu < cost1}
               >
                 MAX

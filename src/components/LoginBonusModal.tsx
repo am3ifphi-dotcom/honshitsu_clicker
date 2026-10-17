@@ -20,7 +20,7 @@ export default function LoginBonusModal({ open, onClose }: { open: boolean; onCl
   const currentDayInCycle = canClaim ? (currentStreak % 7) + 1 : ((currentStreak - 1) % 7) + 1;
 
   const handleClaim = () => {
-    sfx.awaken();
+    sfx.login();
     useGame.getState().claimDailyLogin();
   };
 

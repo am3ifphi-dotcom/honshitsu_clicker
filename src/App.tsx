@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGame } from './game/store';
 import { installDebugShortcut } from './utils/debugShortcut';
 import { derive, spTotal, spSpent } from './game/formulas';
@@ -18,6 +18,10 @@ import ItemsTab from './components/ItemsTab';
 import RebirthTab from './components/RebirthTab';
 import RecordsTab from './components/RecordsTab';
 import TitleScreen from './components/TitleScreen';
+import CreditsModal from './components/CreditsModal';
+import { sfx } from './utils/sfx';
+import { unlockAudio } from './utils/audio';
+import { startBgm, stopBgm } from './utils/bgm';
 import LoginBonusModal from './components/LoginBonusModal';
 import UpdateGiftModal from './components/UpdateGiftModal';
 import { Btn, Modal } from './components/ui';
@@ -53,6 +57,7 @@ export default function App() {
   const [seenId, setSeenId] = useState(0);
   const [showAutoGift, setShowAutoGift] = useState(false);
   const [showAutoLogin, setShowAutoLogin] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
 
   const cans = useGame((s) => s.cans);
   const tickets = useGame((s) => s.items['ticket'] || 0);
@@ -100,6 +105,7 @@ export default function App() {
       if (document.hidden) return;
       const th = THREADS[Math.floor(Math.random() * THREADS.length)];
       useGame.getState().pushLines(th, 1300);
+      sfx.notify();
     }, 17000);
     return () => window.clearInterval(id);
   }, []);
@@ -108,7 +114,32 @@ export default function App() {
     if (chatOpen) setSeenId(lastChatId);
   }, [chatOpen, lastChatId]);
 
+  // 遊べる章が増えたら知らせる（初回は鳴らさない）
+  const storyReadySeen = useRef(false);
+  useEffect(() => {
+    if (!storyReady) {
+      storyReadySeen.current = false;
+      return;
+    }
+    if (storyReadySeen.current) return;
+    storyReadySeen.current = true;
+    if (!showTitle) sfx.notice();
+  }, [storyReady, showTitle]);
+
   useEffect(() => installDebugShortcut(window, () => useGame.getState().maxEverything()), []);
+
+  // 画面が非表示のときは BGM を止める（戻ったら再開）
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) stopBgm();
+      else if (!showTitle) {
+        unlockAudio();
+        void startBgm();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [showTitle]);
 
   const badge: Partial<Record<Tab, boolean>> = {
     gacha: cans >= 5 || tickets > 0,
@@ -153,7 +184,10 @@ export default function App() {
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                setTab(t.id);
+                sfx.tab();
+              }}
               className={`tap-none relative flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-bold transition ${tab === t.id ? 'border-purple-300/60 bg-purple-600/40 text-white shadow-lg shadow-purple-900/40' : 'border-transparent text-slate-300 hover:bg-white/5'}`}
             >
               <span className="w-6 text-center text-lg">{t.emoji}</span>
@@ -180,6 +214,7 @@ export default function App() {
               key={t.id}
               onClick={() => {
                 setTab(t.id);
+                sfx.tab();
                 window.scrollTo({ top: 0 });
               }}
               className={`tap-none relative flex min-w-[64px] flex-1 flex-col items-center gap-0.5 px-1 py-2 text-[10px] font-bold ${tab === t.id ? 'text-purple-200' : 'text-slate-400'}`}
@@ -241,12 +276,15 @@ export default function App() {
       {showTitle && (
         <TitleScreen
           hasSave={hasSave}
+          onCredits={() => setShowCredits(true)}
           onStart={() => {
             setShowTitle(false);
             useGame.getState().markTitleSeen();
           }}
         />
       )}
+
+      <CreditsModal open={showCredits} onClose={() => setShowCredits(false)} />
     </div>
   );
 }

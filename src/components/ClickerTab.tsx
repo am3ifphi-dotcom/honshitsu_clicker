@@ -6,6 +6,13 @@ import { TICKER } from '../game/data/chatter';
 import { fmt, pct } from '../game/format';
 import { Panel, Chip } from './ui';
 import { sfx } from '../utils/sfx';
+// パーティクル画像: Kenney "Particle Pack 1.1"（CC0）— 出典は CREDITS.md
+import circleParticle from '../assets/particles/circle_02.png';
+import sparkParticle from '../assets/particles/spark_01.png';
+import starParticle from '../assets/particles/star_01.png';
+import starBigParticle from '../assets/particles/star_05.png';
+import lightParticle from '../assets/particles/light_01.png';
+import magicParticle from '../assets/particles/magic_01.png';
 
 interface Floater {
   id: number;
@@ -37,7 +44,7 @@ export default function ClickerTab() {
   const s = useGame();
   const d = derive(s);
   const [floats, setFloats] = useState<Floater[]>([]);
-  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number; crit: boolean }[]>([]);
   const [pressKey, setPressKey] = useState(0);
   const [mode, setMode] = useState<1 | 10 | 'max'>(1);
   const [quote, setQuote] = useState(0);
@@ -65,7 +72,7 @@ export default function ClickerTab() {
     const id = ++fid;
     const word = r.crit ? 'まじ✝本質✝！' : Math.random() < 0.15 ? WORDS[Math.floor(Math.random() * WORDS.length)] : '';
     setFloats((f) => [...f.slice(-24), { id, x, y, text: '+' + fmt(r.amount), crit: r.crit, word }]);
-    setRipples((rr) => [...rr.slice(-6), { id, x, y }]);
+    setRipples((rr) => [...rr.slice(-6), { id, x, y, crit: r.crit }]);
     setPressKey((k) => k + 1);
     setTimeout(() => {
       setFloats((f) => f.filter((z) => z.id !== id));
@@ -124,8 +131,33 @@ export default function ClickerTab() {
           </div>
 
           {ripples.map((r) => (
-            <span key={r.id} className="anim-ripple pointer-events-none absolute h-24 w-24 rounded-full border-2 border-purple-200/70" style={{ left: r.x, top: r.y }} />
+            <span key={r.id} className="pointer-events-none absolute" style={{ left: r.x, top: r.y }}>
+              <span className="anim-ripple absolute h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-200/60" />
+              <img
+                src={circleParticle}
+                alt=""
+                draggable={false}
+                className="anim-ripple-img absolute h-28 w-28 mix-blend-screen"
+                style={{ filter: r.crit ? 'drop-shadow(0 0 14px rgba(252,211,77,.95))' : 'drop-shadow(0 0 12px rgba(192,132,252,.9))' }}
+              />
+              <img
+                src={r.crit ? starBigParticle : starParticle}
+                alt=""
+                draggable={false}
+                className="anim-particle absolute h-16 w-16 mix-blend-screen"
+                style={{ filter: r.crit ? 'drop-shadow(0 0 16px rgba(253,224,71,.95))' : 'drop-shadow(0 0 12px rgba(216,180,254,.9))' }}
+              />
+              {r.crit && (
+                <img src={sparkParticle} alt="" draggable={false} className="anim-particle-slow absolute h-24 w-24 mix-blend-screen" style={{ filter: 'drop-shadow(0 0 14px rgba(251,146,60,.9))' }} />
+              )}
+            </span>
           ))}
+
+          {/* 教室に漂う✝本質✝（Kenney パーティクル素材） */}
+          <span className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+            <img src={magicParticle} alt="" draggable={false} className="anim-drift absolute left-[12%] top-[22%] h-24 w-24 opacity-25 mix-blend-screen" style={{ filter: 'drop-shadow(0 0 18px rgba(168,85,247,.8))' }} />
+            <img src={magicParticle} alt="" draggable={false} className="anim-drift-slow absolute right-[16%] top-[58%] h-20 w-20 opacity-20 mix-blend-screen" style={{ filter: 'drop-shadow(0 0 18px rgba(56,189,248,.7))' }} />
+          </span>
           {floats.map((f) => (
             <div key={f.id} className="anim-float pointer-events-none absolute whitespace-nowrap text-center font-display" style={{ left: f.x, top: f.y - 20 }}>
               <div className={f.crit ? 'text-2xl text-amber-300 drop-shadow' : 'text-lg text-white drop-shadow'}>{f.text}</div>
@@ -144,7 +176,8 @@ export default function ClickerTab() {
               style={{ left: `${s.golden.x}%`, top: `${s.golden.y}%` }}
               title="黄金の✝"
             >
-              <span className="font-display text-amber-300 [text-shadow:0_0_12px_#fde047]">✝</span>
+              <img src={lightParticle} alt="" draggable={false} className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 animate-pulse mix-blend-screen" style={{ filter: 'drop-shadow(0 0 18px rgba(253,224,71,.9))' }} />
+              <span className="relative font-display text-amber-300 [text-shadow:0_0_12px_#fde047]">✝</span>
             </button>
           )}
         </div>
